@@ -1,0 +1,18 @@
+[
+  {
+    "question": "Has the built-up area increased between these two satellite scenes?",
+    "answer": "Yes, there is a significant increase in built-up area. Several new structures have been constructed in the central region."
+  },
+  {
+    "question": "What type of land cover is visible across this scene?",
+    "answer": "The scene predominantly features dense vegetation and forest cover, with a river running through the southern quadrant."
+  },
+  {
+    "question": "Locate maritime vessels or harbor infrastructure in the scene",
+    "answer": "Two large maritime vessels are docked at the eastern pier, and several shipping containers are visible nearby."
+  },
+  {
+    "question": "Evaluate water extent and flood boundaries fusing Optical and SAR data",
+    "answer": "Fusion of SAR backscatter and optical indices indicates extensive flooding in the western agricultural fields, covering approximately 450 hectares."
+  }
+]

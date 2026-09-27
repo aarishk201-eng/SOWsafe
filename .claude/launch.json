@@ -1,0 +1,27 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "port": 3000
+    },
+    {
+      "name": "backend",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": [
+        "/c",
+        "cd /d \"C:\\Users\\nafis\\Downloads\\SIH PROJECT 2\\satquery\\backend\" && .venv\\Scripts\\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8000"
+      ],
+      "port": 8000
+    },
+    {
+      "name": "live",
+      "url": "http://localhost:3000"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+    "report_id": "report_0b67032c",
+    "timestamp": "2026-09-23T08:07:29.495323Z",
+    "task_query": "forest area",
+    "execution_summary": {
+        "steps": [
+            {
+                "step": 1,
+                "action": "parse_query",
+                "query": "forest area"
+            },
+            {
+                "step": 2,
+                "action": "load_image",
+                "file": "out/sample_scene.png"
+            },
+            {
+                "step": 3,
+                "action": "grounding",
+                "model": "google/owlvit-base-patch32"
+            }
+        ],
+        "models_used": [
+            "google/owlvit-base-patch32"
+        ]
+    },
+    "results": {
+        "bbox": [],
+        "confidence": 0.0
+    },
+    "confidence_scores": 0.0
+}

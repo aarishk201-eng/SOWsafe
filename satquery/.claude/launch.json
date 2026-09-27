@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "backend",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-lc",
+        "cd \"/c/Users/nafis/Downloads/SIH PROJECT 2/satquery/backend\" && exec .venv/Scripts/python.exe -m uvicorn main:app --host 127.0.0.1 --port 8000"
+      ],
+      "port": 8000
+    },
+    {
+      "name": "frontend",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-lc",
+        "cd \"/c/Users/nafis/Downloads/SIH PROJECT 2/satquery/frontend\" && NEXT_PUBLIC_API_URL=http://localhost:8000 exec npm run dev"
+      ],
+      "port": 3000
+    }
+  ]
+}

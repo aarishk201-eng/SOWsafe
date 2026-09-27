@@ -1,0 +1,11 @@
+{
+  "name": "satquery-workspace",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix satquery/frontend run dev",
+    "build": "npm --prefix satquery/frontend run build",
+    "start": "npm --prefix satquery/frontend run start",
+    "lint": "npm --prefix satquery/frontend run lint"
+  }
+}

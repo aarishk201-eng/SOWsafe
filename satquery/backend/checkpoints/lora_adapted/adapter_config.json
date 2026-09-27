@@ -1,0 +1,11 @@
+{
+  "adapter_type": "LoRA",
+  "r": 16,
+  "lora_alpha": 32.0,
+  "scaling": 2.0,
+  "target_modules": [
+    "vlm_projection",
+    "classifier"
+  ],
+  "base_model": "base_vlm_projection"
+}
