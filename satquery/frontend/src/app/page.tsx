@@ -57,8 +57,8 @@ function MetricCard({ label, value, suffix, accent }: { label: string; value: an
   const display = value === null || value === undefined ? "—" : `${value}${suffix || ""}`;
   return (
     <div className="hover-lift" style={{ position: "relative", overflow: "hidden", padding: "16px", borderRadius: "12px", background: "rgba(255,255,255,0.03)", border: "1px solid var(--border-subtle)" }}>
-      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "2px", background: accent || "#38bdf8", opacity: 0.75 }} />
-      <div style={{ fontSize: "26px", fontWeight: 700, color: accent || "#38bdf8", fontFamily: "var(--font-geist-mono)" }} className="tnum">{display}</div>
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "2px", background: accent || "#60a5fa", opacity: 0.75 }} />
+      <div style={{ fontSize: "26px", fontWeight: 700, color: accent || "#60a5fa", fontFamily: "var(--font-geist-mono)" }} className="tnum">{display}</div>
       <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "4px" }}>{label}</div>
     </div>
   );
@@ -76,7 +76,7 @@ function BenchmarkView({ data, loading, error, onReload }: { data: any; loading:
             {data?.description || "Bounded offline evaluation over local georeferenced validation fixtures. Every metric is computed from real specialist-model output on real pixels."}
           </p>
         </div>
-        <button onClick={onReload} disabled={loading} className="btn-soft" style={{ padding: "8px 16px", borderRadius: "8px", background: "rgba(56,189,248,0.15)", border: "1px solid rgba(56,189,248,0.35)", color: "#38bdf8", fontSize: "13px", fontWeight: 600, cursor: loading ? "wait" : "pointer" }}>
+        <button onClick={onReload} disabled={loading} className="btn-soft" style={{ padding: "8px 16px", borderRadius: "8px", background: "rgba(59,130,246,0.15)", border: "1px solid rgba(59,130,246,0.35)", color: "#60a5fa", fontSize: "13px", fontWeight: 600, cursor: loading ? "wait" : "pointer" }}>
           {loading ? "Running…" : "↻ Re-run"}
         </button>
       </div>
@@ -96,9 +96,9 @@ function BenchmarkView({ data, loading, error, onReload }: { data: any; loading:
         <>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "12px", marginBottom: "22px" }}>
             <MetricCard label="VQA accuracy" value={m.vqa_accuracy} suffix="%" accent="#34d399" />
-            <MetricCard label="Captioning coverage" value={m.captioning_score} suffix="%" accent="#a78bfa" />
+            <MetricCard label="Captioning coverage" value={m.captioning_score} suffix="%" accent="#93b4f5" />
             <MetricCard label="Change-VQA accuracy" value={m.change_vqa_accuracy} suffix="%" accent="#34d399" />
-            <MetricCard label="Grounding detection" value={m.grounding_detection_rate} suffix="%" accent="#38bdf8" />
+            <MetricCard label="Grounding detection" value={m.grounding_detection_rate} suffix="%" accent="#60a5fa" />
             <MetricCard label="Composite score" value={m.composite_score} suffix="%" accent="#fbbf24" />
             <MetricCard label="Latency p50" value={m.latency_p50_ms} suffix=" ms" />
             <MetricCard label="Latency p95" value={m.latency_p95_ms} suffix=" ms" />
@@ -186,7 +186,7 @@ function RegistryView({ data, loading, error, onReload }: { data: any; loading: 
             Every model, geospatial tool, supported task type and tunable threshold that governs a run — auditable alongside the execution trace.
           </p>
         </div>
-        <button onClick={onReload} disabled={loading} className="btn-soft" style={{ padding: "8px 16px", borderRadius: "8px", background: "rgba(56,189,248,0.15)", border: "1px solid rgba(56,189,248,0.35)", color: "#38bdf8", fontSize: "13px", fontWeight: 600, cursor: loading ? "wait" : "pointer" }}>
+        <button onClick={onReload} disabled={loading} className="btn-soft" style={{ padding: "8px 16px", borderRadius: "8px", background: "rgba(59,130,246,0.15)", border: "1px solid rgba(59,130,246,0.35)", color: "#60a5fa", fontSize: "13px", fontWeight: 600, cursor: loading ? "wait" : "pointer" }}>
           {loading ? "Loading…" : "↻ Refresh"}
         </button>
       </div>
@@ -205,8 +205,8 @@ function RegistryView({ data, loading, error, onReload }: { data: any; loading: 
       {data && (
         <>
           {data.router && (
-            <div style={{ marginTop: "16px", padding: "14px 16px", borderRadius: "12px", background: "rgba(99,102,241,0.10)", border: "1px solid rgba(99,102,241,0.30)" }}>
-              <div style={{ fontSize: "14px", fontWeight: 700, color: "#a5b4fc" }}>{data.router.name} · <span style={{ fontSize: "12px", fontWeight: 500, color: "var(--text-secondary)" }}>{data.router.phase} · {data.router.status}</span></div>
+            <div style={{ marginTop: "16px", padding: "14px 16px", borderRadius: "12px", background: "rgba(59,130,246,0.10)", border: "1px solid rgba(59,130,246,0.30)" }}>
+              <div style={{ fontSize: "14px", fontWeight: 700, color: "#93b4f5" }}>{data.router.name} · <span style={{ fontSize: "12px", fontWeight: 500, color: "var(--text-secondary)" }}>{data.router.phase} · {data.router.status}</span></div>
               <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "4px" }}>{data.router.description}</div>
             </div>
           )}
@@ -227,7 +227,7 @@ function RegistryView({ data, loading, error, onReload }: { data: any; loading: 
               <div key={mo.id} className="hover-lift" style={{ padding: "14px", borderRadius: "12px", background: "rgba(255,255,255,0.03)", border: "1px solid var(--border-subtle)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px" }}>
                   <span style={{ fontSize: "13px", fontWeight: 700, color: "var(--text-primary)" }}>{mo.name}</span>
-                  <span style={{ fontSize: "11px", padding: "2px 8px", borderRadius: "10px", background: "rgba(56,189,248,0.15)", color: "#38bdf8", fontFamily: "var(--font-geist-mono)" }}>v{mo.version}</span>
+                  <span style={{ fontSize: "11px", padding: "2px 8px", borderRadius: "10px", background: "rgba(59,130,246,0.15)", color: "#60a5fa", fontFamily: "var(--font-geist-mono)" }}>v{mo.version}</span>
                 </div>
                 <div style={{ fontSize: "11px", color: "var(--text-muted)", fontFamily: "var(--font-geist-mono)", marginTop: "2px" }}>{mo.id}</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginTop: "8px" }}>
@@ -270,7 +270,7 @@ function RegistryView({ data, loading, error, onReload }: { data: any; loading: 
             <tbody>
               {params.map((p: any, i: number) => (
                 <tr key={i}>
-                  <td style={{ ...td, fontFamily: "var(--font-geist-mono)", color: "#38bdf8" }}>{p.name}</td>
+                  <td style={{ ...td, fontFamily: "var(--font-geist-mono)", color: "#60a5fa" }}>{p.name}</td>
                   <td style={{ ...td, fontFamily: "var(--font-geist-mono)", color: "var(--text-primary)" }}>{String(p.value)}</td>
                   <td style={td}>{p.stage}</td>
                   <td style={td}>{p.description}</td>
@@ -305,6 +305,8 @@ export default function SatQueryApp() {
   const [isExecuting, setIsExecuting] = useState<boolean>(false);
   const [executionResult, setExecutionResult] = useState<QueryResponse | null>(null);
   const [execError, setExecError] = useState<string | null>(null);
+  // Answer-rendering language. Matches the backend contract exactly: "en" | "hi" | "hinglish".
+  const [language, setLanguage] = useState<"en" | "hi" | "hinglish">("en");
 
   // Report Modal / Export State
   const [showReportModal, setShowReportModal] = useState<boolean>(false);
@@ -434,6 +436,7 @@ export default function SatQueryApp() {
     try {
       const formData = new FormData();
       formData.append("query", query);
+      formData.append("language", language);
       if (fileA) formData.append("files", fileA);
       if (fileB) formData.append("files", fileB);
 
@@ -478,7 +481,7 @@ export default function SatQueryApp() {
       const t = data.trace || {};
       const checks = (t.validation_checks || []).map((v: any) => ({ check: v.check, passed: v.passed, detail: v.detail }));
       const allPassed = checks.every((c: { passed: boolean }) => c.passed);
-      const overall = t.confidence_summary?.overall ?? 0.85;
+      const overall = t.confidence_summary?.overall;
       setExecutionResult({
         answer: typeof data.answer === "string" ? data.answer : String(data.answer),
         status: "success",
@@ -536,8 +539,23 @@ export default function SatQueryApp() {
     if (appView === "registry" && !registry && !registryLoading) loadRegistry();
   }, [appView, benchmark, benchmarkLoading, registry, registryLoading, loadBenchmark, loadRegistry]);
 
+  // Pre-flight: run /validate-pair compatibility as soon as BOTH scenes are attached.
+  useEffect(() => {
+    if (fileA && fileB) {
+      validateUploadedPair(fileA, fileB);
+    }
+  }, [fileA, fileB, validateUploadedPair]);
+
+  // Reflect the selected answer language on the live document (root layout stays "en" for SSR).
+  useEffect(() => {
+    const htmlLang: Record<typeof language, string> = { en: "en", hi: "hi", hinglish: "hi-Latn" };
+    document.documentElement.lang = htmlLang[language] || "en";
+  }, [language]);
+
   // Derive confidence from result
-  const getConfidenceInfo = (conf: number) => {
+  const getConfidenceInfo = (conf: number | null | undefined) => {
+    if (conf === null || conf === undefined || Number.isNaN(conf))
+      return { bucket: "Confidence n/a", color: "#94a3b8", bg: "rgba(148, 163, 184, 0.12)", border: "rgba(148, 163, 184, 0.35)", icon: "⚪" };
     if (conf >= 0.85) return { bucket: "High Confidence", color: "#34d399", bg: "rgba(16, 185, 129, 0.12)", border: "rgba(16, 185, 129, 0.35)", icon: "🟢" };
     if (conf >= 0.60) return { bucket: "Medium Confidence", color: "#fbbf24", bg: "rgba(245, 158, 11, 0.12)", border: "rgba(245, 158, 11, 0.35)", icon: "🟡" };
     return { bucket: "Low Confidence", color: "#fb7185", bg: "rgba(244, 63, 94, 0.12)", border: "rgba(244, 63, 94, 0.35)", icon: "🔴" };
@@ -545,16 +563,19 @@ export default function SatQueryApp() {
 
   const trace = executionResult?.execution_trace || executionResult?.trace;
   const outputs = executionResult?.outputs || {};
-  let currentConfidence = 0;
-  if (outputs.vqa?.confidence) currentConfidence = outputs.vqa.confidence;
-  else if (outputs.caption?.confidence) currentConfidence = outputs.caption.confidence;
-  else if (outputs.grounding?.confidence) currentConfidence = outputs.grounding.confidence;
-  else if (outputs.fusion?.confidence) currentConfidence = outputs.fusion.confidence;
-  else if (executionResult && !currentConfidence) currentConfidence = 0.95;
+  let currentConfidence: number | null = null;
+  if (typeof outputs.vqa?.confidence === "number") currentConfidence = outputs.vqa.confidence;
+  else if (typeof outputs.caption?.confidence === "number") currentConfidence = outputs.caption.confidence;
+  else if (typeof outputs.grounding?.confidence === "number") currentConfidence = outputs.grounding.confidence;
+  else if (typeof outputs.fusion?.confidence === "number") currentConfidence = outputs.fusion.confidence;
+  // No fabricated fallback: when the backend reports no confidence, it stays null and renders as "n/a".
 
   const confInfo = getConfidenceInfo(currentConfidence);
 
-  const handleDownloadReport = () => {
+  // Execute is gated on a real uploaded scene: a query cannot run without an image.
+  const executeDisabled = isExecuting || !query.trim() || !fileA;
+
+  const handleDownloadReport = async () => {
     if (!executionResult) return;
     setIsExporting(true);
     try {
@@ -575,7 +596,43 @@ export default function SatQueryApp() {
         downloadAnchorNode.click();
         downloadAnchorNode.remove();
       } else {
-        window.print();
+        // Real client-side PDF (jsPDF) built from the actual assembled report data.
+        const { jsPDF } = await import("jspdf");
+        const doc = new jsPDF({ unit: "pt", format: "a4" });
+        const marginX = 48;
+        const maxW = doc.internal.pageSize.getWidth() - marginX * 2;
+        const pageH = doc.internal.pageSize.getHeight();
+        let y = 56;
+        const ensure = (h: number) => { if (y + h > pageH - 48) { doc.addPage(); y = 56; } };
+        const write = (text: string, size: number, bold: boolean, color: [number, number, number] = [20, 24, 33]) => {
+          doc.setFont("helvetica", bold ? "bold" : "normal");
+          doc.setFontSize(size);
+          doc.setTextColor(color[0], color[1], color[2]);
+          for (const line of doc.splitTextToSize(text || "—", maxW) as string[]) {
+            ensure(size + 6);
+            doc.text(line, marginX, y);
+            y += size + 6;
+          }
+        };
+        const gap = (h = 10) => { y += h; };
+
+        write("SatQuery — Earth Observation Analysis Report", 18, true);
+        write(new Date().toLocaleString(), 9, false, [120, 128, 140]);
+        gap();
+        const t: any = report.trace || {};
+        write("Query", 12, true, [59, 110, 220]); write(report.query, 11, false); gap();
+        write(`Language: ${language}`, 10, false, [90, 98, 110]); gap(4);
+        write("Answer", 12, true, [59, 110, 220]); write(String(report.answer ?? "—"), 11, false); gap();
+        write("Confidence", 12, true, [59, 110, 220]);
+        write(`${report.confidence.bucket}${currentConfidence != null ? ` — ${(currentConfidence * 100).toFixed(1)}%` : ""}`, 11, false);
+        gap();
+        const models: string[] = t.models_used || (t.model_selections || []).map((m: any) => m.version ? `${m.name} (${m.version})` : m.name);
+        if (models?.length) { write("Models Invoked", 12, true, [59, 110, 220]); models.forEach((m) => write(`• ${m}`, 10, false)); gap(); }
+        const val = t.validation; if (val) { write("Validation", 12, true, [59, 110, 220]); write(`Status: ${val.status ?? (val.passed ? "passed" : "failed")}`, 10, false); (val.checks || []).forEach((c: any) => write(`• ${c.check}: ${c.passed ? "PASS" : "FAIL"}${c.detail ? ` — ${c.detail}` : ""}`, 9, false)); gap(); }
+        const steps: any[] = t.execution_steps || []; if (steps.length) { write("Execution Trace", 12, true, [59, 110, 220]); steps.forEach((s: any, i: number) => write(`${i + 1}. ${typeof s === "string" ? s : (s.step || s.action || JSON.stringify(s))}`, 9, false)); gap(); }
+        write("Evidence & Outputs", 12, true, [59, 110, 220]);
+        write(JSON.stringify(report.outputs ?? {}, null, 2), 8, false, [70, 78, 90]);
+        doc.save("satquery_report.pdf");
       }
     } catch (e) {
       console.error("Export failed", e);
@@ -586,211 +643,78 @@ export default function SatQueryApp() {
   };
 
   return (
-    <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "32px 24px 64px" }}>
-      {/* Top Mission Bar */}
-      <header
-        className="glass-panel"
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          padding: "16px 28px",
-          marginBottom: "32px",
-          position: "sticky",
-          top: "16px",
-          zIndex: 50,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-          {/* Animated SatQuery Radar Glyph */}
-          <div
-            style={{
-              position: "relative",
-              width: "42px",
-              height: "42px",
-              borderRadius: "50%",
-              background: "linear-gradient(135deg, rgba(14, 165, 233, 0.2), rgba(99, 102, 241, 0.2))",
-              border: "1px solid rgba(56, 189, 248, 0.4)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <div
-              className="animate-spin-slow"
-              style={{
-                position: "absolute",
-                width: "36px",
-                height: "36px",
-                borderRadius: "50%",
-                borderTop: "2px solid #00f0ff",
-                borderRight: "2px solid transparent",
-                borderBottom: "2px solid transparent",
-                borderLeft: "2px solid transparent",
-              }}
-            />
-            <div className="radar-sweep" style={{ top: "3px", left: "3px" }} />
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#00f0ff"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M4 11a9 9 0 0 1 9 9" />
-              <path d="M4 4a16 16 0 0 1 16 16" />
-              <circle cx="5" cy="19" r="1" />
+    <div className="app-shell">
+      {/* ===== Sidebar navigation ===== */}
+      <aside className="sidebar">
+        <div className="sidebar-brand">
+          <span className="sidebar-logo">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="7.5" />
+              <path d="M4.5 12h15" />
+              <path d="M12 4.5c3 2.4 3 12.6 0 15" />
+              <path d="M12 4.5c-3 2.4-3 12.6 0 15" />
             </svg>
-          </div>
-
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <h1 className="gradient-text" style={{ fontSize: "20px", fontWeight: 700, letterSpacing: "-0.02em" }}>
-                SatQuery
-              </h1>
-              <span
-                style={{
-                  fontSize: "11px",
-                  padding: "2px 8px",
-                  borderRadius: "12px",
-                  background: "rgba(56, 189, 248, 0.15)",
-                  color: "#38bdf8",
-                  border: "1px solid rgba(56, 189, 248, 0.3)",
-                  fontWeight: 600,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.05em",
-                }}
-              >
-                Monorepo v0.1.0
-              </span>
-            </div>
-            <p style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
-              Earth Observation & Geospatial Intelligence System
-            </p>
+          </span>
+          <div style={{ minWidth: 0 }}>
+            <span className="gradient-text" style={{ fontSize: "17px", fontWeight: 700, letterSpacing: "-0.01em", display: "block" }}>SatQuery</span>
+            <div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>Geospatial Intelligence</div>
           </div>
         </div>
 
-        {/* Feature 2/3: primary view switcher */}
-        <nav style={{ display: "flex", gap: "4px", padding: "4px", borderRadius: "12px", background: "rgba(255,255,255,0.04)", border: "1px solid var(--border-subtle)" }}>
-          {([
-            { id: "workspace", label: "Workspace", icon: "🛰️" },
-            { id: "benchmark", label: "Benchmarks", icon: "📊" },
-            { id: "registry", label: "Registry", icon: "🧩" },
-          ] as const).map((v) => (
-            <button
-              key={v.id}
-              onClick={() => setAppView(v.id)}
-              className="nav-tab"
-              style={{
-                display: "flex", alignItems: "center", gap: "6px",
-                padding: "7px 14px", borderRadius: "9px", cursor: "pointer",
-                fontSize: "13px", fontWeight: 600, border: "none",
-                background: appView === v.id ? "rgba(56, 189, 248, 0.18)" : "transparent",
-                color: appView === v.id ? "#38bdf8" : "var(--text-secondary)",
-                transition: "all 0.2s",
-              }}
-            >
-              <span>{v.icon}</span>
-              <span>{v.label}</span>
-            </button>
-          ))}
-        </nav>
-
-        {/* Global Connection Badge */}
-        <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              padding: "6px 14px",
-              borderRadius: "30px",
-              background:
-                connectionStatus === "connected"
-                  ? "rgba(16, 185, 129, 0.12)"
-                  : connectionStatus === "connecting"
-                  ? "rgba(245, 158, 11, 0.12)"
-                  : "rgba(244, 63, 94, 0.12)",
-              border: `1px solid ${
-                connectionStatus === "connected"
-                  ? "rgba(16, 185, 129, 0.35)"
-                  : connectionStatus === "connecting"
-                  ? "rgba(245, 158, 11, 0.35)"
-                  : "rgba(244, 63, 94, 0.35)"
-              }`,
-            }}
+        <div className="sidebar-section-label">Console</div>
+        {([
+          { id: "workspace", label: "Workspace" },
+          { id: "benchmark", label: "Benchmarks" },
+          { id: "registry", label: "Registry" },
+        ] as const).map((v) => (
+          <button
+            key={v.id}
+            onClick={() => setAppView(v.id)}
+            className={`sidebar-item${appView === v.id ? " active" : ""}`}
           >
-            <span
-              className={
-                connectionStatus === "connected"
-                  ? "animate-pulse-emerald"
-                  : connectionStatus === "connecting"
-                  ? "animate-pulse-cyan"
-                  : ""
-              }
-              style={{
-                display: "inline-block",
-                width: "9px",
-                height: "9px",
-                borderRadius: "50%",
-                backgroundColor:
-                  connectionStatus === "connected"
-                    ? "var(--emerald-bright)"
-                    : connectionStatus === "connecting"
-                    ? "var(--amber-bright)"
-                    : "var(--rose-bright)",
-              }}
-            />
-            <span
-              style={{
-                fontSize: "13px",
-                fontWeight: 600,
-                color:
-                  connectionStatus === "connected"
-                    ? "#34d399"
-                    : connectionStatus === "connecting"
-                    ? "#fbbf24"
-                    : "#fb7185",
-              }}
-            >
-              {connectionStatus === "connected"
-                ? "Connected"
-                : connectionStatus === "connecting"
-                ? "Connecting..."
-                : "Disconnected"}
+            <span className="si-icon">
+              {v.id === "workspace" ? (
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+              ) : v.id === "benchmark" ? (
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><rect x="7" y="11" width="3" height="6"/><rect x="12" y="7" width="3" height="10"/><rect x="17" y="13" width="3" height="4"/></svg>
+              ) : (
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+              )}
+            </span>
+            <span>{v.label}</span>
+          </button>
+        ))}
+        <div className="sidebar-spacer" />
+
+        <div className="sidebar-foot">
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 10px", borderRadius: "8px", background: connectionStatus === "connected" ? "rgba(34,197,94,0.10)" : connectionStatus === "connecting" ? "rgba(245,158,11,0.10)" : "rgba(244,63,94,0.10)", border: `1px solid ${connectionStatus === "connected" ? "rgba(34,197,94,0.30)" : connectionStatus === "connecting" ? "rgba(245,158,11,0.30)" : "rgba(244,63,94,0.30)"}` }}>
+            <span className={connectionStatus === "connected" ? "animate-pulse-emerald" : connectionStatus === "connecting" ? "animate-pulse-cyan" : ""} style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", backgroundColor: connectionStatus === "connected" ? "var(--emerald-bright)" : connectionStatus === "connecting" ? "var(--amber-bright)" : "var(--rose-bright)" }} />
+            <span style={{ fontSize: "12px", fontWeight: 600, color: connectionStatus === "connected" ? "#34d399" : connectionStatus === "connecting" ? "#fbbf24" : "#fb7185" }}>
+              {connectionStatus === "connected" ? "Backend Connected" : connectionStatus === "connecting" ? "Connecting…" : "Disconnected"}
             </span>
           </div>
-
-          <a
-            href={`${API_BASE}/docs`}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              color: "var(--text-secondary)",
-              textDecoration: "none",
-              fontSize: "13px",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              padding: "6px 12px",
-              borderRadius: "8px",
-              border: "1px solid var(--border-subtle)",
-              background: "rgba(255, 255, 255, 0.03)",
-              transition: "all 0.2s",
-            }}
-          >
-            <span>Swagger API</span>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-              <polyline points="15 3 21 3 21 9" />
-              <line x1="10" y1="14" x2="21" y2="3" />
-            </svg>
+          <a href={`${API_BASE}/docs`} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "6px", padding: "8px 10px", borderRadius: "8px", border: "1px solid var(--border-subtle)", background: "rgba(255,255,255,0.02)", color: "var(--text-secondary)", textDecoration: "none", fontSize: "12px", fontWeight: 500 }}>
+            <span>Swagger API Docs</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
           </a>
+          <div style={{ fontSize: "10.5px", color: "var(--text-muted)", padding: "0 2px", fontFamily: "var(--font-geist-mono)" }}>v0.1.0 · monorepo build</div>
         </div>
-      </header>
+      </aside>
+
+      {/* ===== Main content column ===== */}
+      <main style={{ padding: "28px 32px 56px", maxWidth: "1200px", width: "100%" }}>
+        <div className="page-head">
+          <div>
+            <h1>{appView === "workspace" ? "Analysis Workspace" : appView === "benchmark" ? "Benchmark Dashboard" : "Agent Registry"}</h1>
+            <div className="page-sub">
+              {appView === "workspace"
+                ? "Upload georeferenced scenes, query in natural language, and audit every model invocation."
+                : appView === "benchmark"
+                ? "Bounded offline evaluation over local validation fixtures — real pixels, real metrics."
+                : "Every model, tool, task type and tunable threshold that governs an analytical run."}
+            </div>
+          </div>
+        </div>
 
 
       {/* Feature 2: Benchmark Dashboard */}
@@ -853,12 +777,12 @@ export default function SatQueryApp() {
                 onClick={() => fileInputRefA.current?.click()}
                 className="upload-zone"
                 style={{
-                  border: "1px dashed rgba(56, 189, 248, 0.3)",
+                  border: "1px dashed rgba(59, 130, 246, 0.3)",
                   borderRadius: "10px",
                   padding: "16px",
                   textAlign: "center",
                   cursor: "pointer",
-                  background: fileA ? "rgba(14, 165, 233, 0.05)" : "rgba(3, 7, 18, 0.5)",
+                  background: fileA ? "rgba(59, 130, 246, 0.05)" : "rgba(10, 13, 19, 0.5)",
                   transition: "all 0.2s ease",
                   position: "relative",
                   overflow: "hidden",
@@ -916,12 +840,12 @@ export default function SatQueryApp() {
                 onClick={() => fileInputRefB.current?.click()}
                 className="upload-zone"
                 style={{
-                  border: "1px dashed rgba(139, 92, 246, 0.3)",
+                  border: "1px dashed rgba(59, 130, 246, 0.3)",
                   borderRadius: "10px",
                   padding: "16px",
                   textAlign: "center",
                   cursor: "pointer",
-                  background: fileB ? "rgba(139, 92, 246, 0.05)" : "rgba(3, 7, 18, 0.5)",
+                  background: fileB ? "rgba(59, 130, 246, 0.05)" : "rgba(10, 13, 19, 0.5)",
                   transition: "all 0.2s ease",
                   position: "relative",
                   overflow: "hidden",
@@ -977,7 +901,7 @@ export default function SatQueryApp() {
 
             {/* Validation Feedback Display */}
             {isValidatingPair && (
-              <div style={{ padding: "10px 14px", borderRadius: "8px", background: "rgba(56, 189, 248, 0.08)", fontSize: "12px", color: "#38bdf8", display: "flex", alignItems: "center", gap: "8px" }}>
+              <div style={{ padding: "10px 14px", borderRadius: "8px", background: "rgba(59, 130, 246, 0.08)", fontSize: "12px", color: "#60a5fa", display: "flex", alignItems: "center", gap: "8px" }}>
                 <span className="animate-spin-slow">⚙️</span>
                 <span>Executing Phase 1 check_compatibility (CRS, spatial overlap, resolution)...</span>
               </div>
@@ -1021,7 +945,33 @@ export default function SatQueryApp() {
                 <span className="icon-badge">💬</span>
                 <h2 style={{ fontSize: "15px", fontWeight: 600 }}>Natural Language Query Box</h2>
               </div>
-              <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>Auto-routed via Execution Planner</span>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", color: "var(--text-muted)" }}>
+                  <span aria-hidden>🌐</span>
+                  <select
+                    value={language}
+                    onChange={(e) => setLanguage(e.target.value as "en" | "hi" | "hinglish")}
+                    aria-label="Answer language"
+                    title="Language the answer is rendered in (query understanding is cross-lingual)"
+                    style={{
+                      background: "#0a0d13",
+                      color: "#ffffff",
+                      border: "1px solid var(--border-subtle)",
+                      borderRadius: "6px",
+                      padding: "4px 8px",
+                      fontSize: "12px",
+                      fontFamily: "inherit",
+                      outline: "none",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <option value="en">English</option>
+                    <option value="hi">हिन्दी (Hindi)</option>
+                    <option value="hinglish">Hinglish</option>
+                  </select>
+                </label>
+                <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>Auto-routed via Execution Planner</span>
+              </div>
             </div>
 
             {/* Quick-Prompt Suggestions */}
@@ -1061,7 +1011,7 @@ export default function SatQueryApp() {
                 width: "100%",
                 padding: "12px 14px",
                 borderRadius: "8px",
-                background: "#030712",
+                background: "#0a0d13",
                 border: "1px solid var(--border-subtle)",
                 color: "#ffffff",
                 fontSize: "14px",
@@ -1086,9 +1036,9 @@ export default function SatQueryApp() {
                 style={{
                   padding: "10px 18px",
                   borderRadius: "8px",
-                  background: isExecuting || !fileA ? "rgba(255,255,255,0.05)" : "rgba(139, 92, 246, 0.15)",
-                  color: isExecuting || !fileA ? "var(--text-muted)" : "#c4b5fd",
-                  border: `1px solid ${isExecuting || !fileA ? "rgba(255,255,255,0.1)" : "rgba(139, 92, 246, 0.4)"}`,
+                  background: isExecuting || !fileA ? "rgba(255,255,255,0.05)" : "rgba(59, 130, 246, 0.15)",
+                  color: isExecuting || !fileA ? "var(--text-muted)" : "#93b4f5",
+                  border: `1px solid ${isExecuting || !fileA ? "rgba(255,255,255,0.1)" : "rgba(59, 130, 246, 0.4)"}`,
                   fontWeight: 600,
                   fontSize: "13px",
                   cursor: isExecuting || !fileA ? "not-allowed" : "pointer",
@@ -1102,21 +1052,22 @@ export default function SatQueryApp() {
               </button>
               <button
                 onClick={handleExecuteQuery}
-                disabled={isExecuting || !query.trim()}
+                disabled={executeDisabled}
                 className="btn-primary"
+                title={!fileA ? "Attach a satellite scene (Image A) before running a query" : undefined}
                 style={{
                   padding: "10px 22px",
                   borderRadius: "8px",
-                  background: isExecuting || !query.trim() ? "rgba(56, 189, 248, 0.2)" : "linear-gradient(135deg, #0ea5e9, #6366f1)",
+                  background: executeDisabled ? "rgba(59, 130, 246, 0.2)" : "linear-gradient(135deg, #3b82f6, #2563eb)",
                   color: "#ffffff",
                   border: "none",
                   fontWeight: 600,
                   fontSize: "13px",
-                  cursor: isExecuting || !query.trim() ? "not-allowed" : "pointer",
+                  cursor: executeDisabled ? "not-allowed" : "pointer",
                   display: "flex",
                   alignItems: "center",
                   gap: "8px",
-                  boxShadow: isExecuting ? "none" : "0 4px 14px rgba(14, 165, 233, 0.35)",
+                  boxShadow: isExecuting ? "none" : "0 4px 14px rgba(59, 130, 246, 0.35)",
                 }}
               >
                 {isExecuting ? (
@@ -1167,8 +1118,8 @@ export default function SatQueryApp() {
                     gap: "6px",
                     padding: "8px 14px",
                     borderRadius: "8px",
-                    background: !executionResult || isExecuting ? "rgba(255, 255, 255, 0.05)" : "rgba(56, 189, 248, 0.12)",
-                    border: `1px solid ${!executionResult || isExecuting ? "rgba(255, 255, 255, 0.1)" : "rgba(56, 189, 248, 0.35)"}`,
+                    background: !executionResult || isExecuting ? "rgba(255, 255, 255, 0.05)" : "rgba(59, 130, 246, 0.12)",
+                    border: `1px solid ${!executionResult || isExecuting ? "rgba(255, 255, 255, 0.1)" : "rgba(59, 130, 246, 0.35)"}`,
                     color: !executionResult || isExecuting ? "var(--text-muted)" : "var(--cyan-bright)",
                     fontSize: "12px",
                     fontWeight: 600,
@@ -1189,7 +1140,7 @@ export default function SatQueryApp() {
                 style={{
                   padding: "16px",
                   borderRadius: "10px",
-                  background: "rgba(3, 7, 18, 0.75)",
+                  background: "rgba(10, 13, 19, 0.75)",
                   border: "1px solid var(--border-subtle)",
                   marginBottom: "18px",
                 }}
@@ -1215,7 +1166,7 @@ export default function SatQueryApp() {
                     }}
                   >
                     <span>{confInfo.icon}</span>
-                    <span>{(currentConfidence * 100).toFixed(0)}% ({confInfo.bucket})</span>
+                    <span>{currentConfidence !== null ? `${(currentConfidence * 100).toFixed(0)}% (${confInfo.bucket})` : confInfo.bucket}</span>
                   </div>
                 </div>
 
@@ -1229,7 +1180,7 @@ export default function SatQueryApp() {
                   padding: "36px 20px",
                   textAlign: "center",
                   borderRadius: "10px",
-                  background: "rgba(3, 7, 18, 0.4)",
+                  background: "rgba(10, 13, 19, 0.4)",
                   border: "1px dashed var(--border-subtle)",
                   color: "var(--text-muted)",
                   fontSize: "13px",
@@ -1309,7 +1260,7 @@ export default function SatQueryApp() {
                     {executionResult?.before_after?.t1 || (previewUrlA && isBenchmarkFile(fileA)) ? (
                       <img src={executionResult?.before_after?.t1 || previewUrlA!} alt="Scene T1" style={{ width: "100%", height: "140px", objectFit: "cover", borderRadius: "6px" }} />
                     ) : (
-                      <div style={{ height: "140px", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(14, 165, 233, 0.05)", borderRadius: "6px", color: "var(--text-muted)", fontSize: "12px" }}>
+                      <div style={{ height: "140px", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(59, 130, 246, 0.05)", borderRadius: "6px", color: "var(--text-muted)", fontSize: "12px" }}>
                         {fileA ? "GeoTIFF Raw Raster Loaded" : "No T1 Scene Uploaded"}
                       </div>
                     )}
@@ -1319,7 +1270,7 @@ export default function SatQueryApp() {
                     {executionResult?.before_after?.t2 || (previewUrlB && isBenchmarkFile(fileB)) ? (
                       <img src={executionResult?.before_after?.t2 || previewUrlB!} alt="Scene T2" style={{ width: "100%", height: "140px", objectFit: "cover", borderRadius: "6px" }} />
                     ) : (
-                      <div style={{ height: "140px", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(139, 92, 246, 0.05)", borderRadius: "6px", color: "var(--text-muted)", fontSize: "12px" }}>
+                      <div style={{ height: "140px", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(59, 130, 246, 0.05)", borderRadius: "6px", color: "var(--text-muted)", fontSize: "12px" }}>
                         {fileB ? "GeoTIFF Raw Raster Loaded" : "No T2 Scene Uploaded"}
                       </div>
                     )}
@@ -1366,7 +1317,7 @@ export default function SatQueryApp() {
               {/* Tab 4: Visual Evidence Overlays */}
               {activeTab === "evidence" && (() => {
                 const bbox = executionResult?.outputs?.grounding?.bbox || executionResult?.execution_trace?.evidence?.bbox || executionResult?.outputs?.change_vqa?.bbox;
-                const conf = executionResult?.outputs?.grounding?.confidence ?? executionResult?.execution_trace?.evidence?.confidence ?? 0.85;
+                const conf = executionResult?.outputs?.grounding?.confidence ?? executionResult?.execution_trace?.evidence?.confidence ?? null;
                 const gSource = executionResult?.outputs?.grounding?.grounding_source || executionResult?.outputs?.change_vqa?.grounding_source || "owlvit_model";
                 return (
                   <div style={{ padding: "14px", background: "rgba(0,0,0,0.3)", borderRadius: "8px" }}>
@@ -1374,12 +1325,12 @@ export default function SatQueryApp() {
                       Grounded Object Bounding Box & Coordinates:
                     </div>
                     {bbox && Array.isArray(bbox) && bbox.length === 4 ? (
-                      <div style={{ padding: "12px", borderRadius: "6px", background: "rgba(56, 189, 248, 0.08)", border: "1px solid rgba(56, 189, 248, 0.3)" }}>
+                      <div style={{ padding: "12px", borderRadius: "6px", background: "rgba(59, 130, 246, 0.08)", border: "1px solid rgba(59, 130, 246, 0.3)" }}>
                         <div style={{ fontSize: "12px", color: "var(--cyan-bright)", fontWeight: 600, marginBottom: "4px" }}>
                           Bounding Box: [{bbox.join(", ")}]
                         </div>
                         <div style={{ fontSize: "11px", color: "var(--text-muted)", marginBottom: "2px" }}>
-                          Confidence: {(conf * 100).toFixed(1)}%
+                          Confidence: {conf !== null && conf !== undefined ? `${(conf * 100).toFixed(1)}%` : "n/a"}
                         </div>
                         <div style={{ fontSize: "11px", color: gSource === "owlvit_model" ? "#34d399" : "#f59e0b", fontWeight: 600 }}>
                           Source: {gSource === "owlvit_model" ? "OwlViT Model (google/owlvit-base-patch32)" : (gSource === "unavailable" ? "Model Unavailable" : "Change-Mask Fallback")}
@@ -1442,8 +1393,8 @@ export default function SatQueryApp() {
                   style={{
                     padding: "4px 10px",
                     borderRadius: "6px",
-                    background: traceTab === subTab.id ? "rgba(56, 189, 248, 0.15)" : "rgba(255, 255, 255, 0.04)",
-                    border: `1px solid ${traceTab === subTab.id ? "rgba(56, 189, 248, 0.4)" : "var(--border-subtle)"}`,
+                    background: traceTab === subTab.id ? "rgba(59, 130, 246, 0.15)" : "rgba(255, 255, 255, 0.04)",
+                    border: `1px solid ${traceTab === subTab.id ? "rgba(59, 130, 246, 0.4)" : "var(--border-subtle)"}`,
                     color: traceTab === subTab.id ? "var(--cyan-bright)" : "var(--text-secondary)",
                     fontSize: "11px",
                     fontWeight: 600,
@@ -1456,7 +1407,7 @@ export default function SatQueryApp() {
             </div>
 
             {/* Sub-Tab Viewers */}
-            <div style={{ background: "#030712", borderRadius: "8px", padding: "14px", border: "1px solid var(--border-subtle)", minHeight: "140px" }}>
+            <div style={{ background: "#0a0d13", borderRadius: "8px", padding: "14px", border: "1px solid var(--border-subtle)", minHeight: "140px" }}>
               {/* Models Used */}
               {traceTab === "models" && (
                 <div>
@@ -1471,9 +1422,9 @@ export default function SatQueryApp() {
                           style={{
                             padding: "6px 12px",
                             borderRadius: "6px",
-                            background: "rgba(14, 165, 233, 0.1)",
-                            border: "1px solid rgba(56, 189, 248, 0.25)",
-                            color: "#38bdf8",
+                            background: "rgba(59, 130, 246, 0.1)",
+                            border: "1px solid rgba(59, 130, 246, 0.25)",
+                            color: "#60a5fa",
                             fontSize: "12px",
                             fontFamily: "var(--font-geist-mono)",
                           }}
@@ -1554,7 +1505,7 @@ export default function SatQueryApp() {
 
               {/* Raw JSON */}
               {traceTab === "raw" && (
-                <pre style={{ fontSize: "11px", color: "#38bdf8", maxHeight: "200px", overflow: "auto" }}>
+                <pre style={{ fontSize: "11px", color: "#60a5fa", maxHeight: "200px", overflow: "auto" }}>
                   {JSON.stringify(executionResult?.execution_trace || { status: "ready", waiting_for_execution: true }, null, 2)}
                 </pre>
               )}
@@ -1589,7 +1540,7 @@ export default function SatQueryApp() {
               maxWidth: "500px",
               width: "100%",
               background: "#0c1324",
-              border: "1px solid rgba(56, 189, 248, 0.3)",
+              border: "1px solid rgba(59, 130, 246, 0.3)",
               boxShadow: "0 20px 50px rgba(0,0,0,0.8)",
             }}
             onClick={(e) => e.stopPropagation()}
@@ -1619,7 +1570,7 @@ export default function SatQueryApp() {
                   padding: "14px",
                   borderRadius: "8px",
                   border: `1px solid ${reportFormat === "json" ? "var(--cyan-bright)" : "var(--border-subtle)"}`,
-                  background: reportFormat === "json" ? "rgba(14, 165, 233, 0.12)" : "rgba(255, 255, 255, 0.02)",
+                  background: reportFormat === "json" ? "rgba(59, 130, 246, 0.12)" : "rgba(255, 255, 255, 0.02)",
                   cursor: "pointer",
                   textAlign: "center",
                 }}
@@ -1639,7 +1590,7 @@ export default function SatQueryApp() {
                   padding: "14px",
                   borderRadius: "8px",
                   border: `1px solid ${reportFormat === "pdf" ? "var(--cyan-bright)" : "var(--border-subtle)"}`,
-                  background: reportFormat === "pdf" ? "rgba(14, 165, 233, 0.12)" : "rgba(255, 255, 255, 0.02)",
+                  background: reportFormat === "pdf" ? "rgba(59, 130, 246, 0.12)" : "rgba(255, 255, 255, 0.02)",
                   cursor: "pointer",
                   textAlign: "center",
                 }}
@@ -1676,7 +1627,7 @@ export default function SatQueryApp() {
                 style={{
                   padding: "8px 20px",
                   borderRadius: "6px",
-                  background: "linear-gradient(135deg, #0ea5e9, #6366f1)",
+                  background: "linear-gradient(135deg, #3b82f6, #2563eb)",
                   border: "none",
                   color: "#ffffff",
                   fontSize: "13px",
@@ -1711,9 +1662,9 @@ export default function SatQueryApp() {
           <div
             style={{
               padding: "6px 12px",
-              background: "rgba(56, 189, 248, 0.1)",
+              background: "rgba(59, 130, 246, 0.1)",
               borderRadius: "6px",
-              color: "#38bdf8",
+              color: "#60a5fa",
               fontSize: "12px",
               fontFamily: "var(--font-geist-mono)",
             }}
@@ -1729,6 +1680,7 @@ export default function SatQueryApp() {
           Dependencies: fastapi, uvicorn, rasterio, pyproj, python-multipart, pytest, httpx
         </div>
       </footer>
+      </main>
     </div>
   );
 }

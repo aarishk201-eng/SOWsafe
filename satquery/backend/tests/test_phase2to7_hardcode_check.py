@@ -130,8 +130,13 @@ def is_rs_adapted() -> bool:
     Return True only if you actually ran LoRA/QLoRA/fine-tuning on RS data
     and are serving that checkpoint. Return False if Phase 2 is still calling
     a stock general-purpose VLM with no RS adaptation.
+
+    Delegates to the real served flag: models.vqa.is_rs_adapted() reports True
+    only when a genuinely-trained land-cover adapter checkpoint (fit on the real
+    bundled Sentinel-2 tiles) is present and loaded at inference.
     """
-    return True   # <-- set this truthfully; don't guess
+    from models.vqa import is_rs_adapted as _served_is_rs_adapted
+    return bool(_served_is_rs_adapted())
 
 
 # ---------------------------------------------------------------------------

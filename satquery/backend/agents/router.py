@@ -23,6 +23,12 @@ from .planner import (
     execute,
 )
 
+from .language import detect_language, score_intent
+
+# Minimum cross-lingual cosine similarity for the multilingual embedding scorer
+# to override the default single-scene VQA routing on a non-English query.
+_EMB_INTENT_THRESHOLD = 0.40
+
 
 class TaskName(str):
     """String subclass representing a task name that supports case-insensitive
@@ -146,7 +152,8 @@ class SatQueryRouter:
         self.valid_tasks = VALID_TASKS
         self.task_tools = TASK_TOOLS
 
-    def classify_intent(self, query: str, trace: Optional[Any] = None) -> Dict[str, Any]:
+    def classify_intent(self, query: str, trace: Optional[Any] = None,
+                        language: Optional[str] = None) -> Dict[str, Any]:
         """Classifies a natural-language query into {task, tools}.
 
         Args:
@@ -194,12 +201,21 @@ class SatQueryRouter:
                 "reasoning": "Empty query defaulted to VQA baseline.",
                 "query": query or "",
                 "clarification_needed": True,
+                "language": (str(language).strip().lower() if language else "en"),
+                "detected_language": "en",
                 "target_pipeline": "vqa",
                 "handler": "models.vqa",
             }
 
         q_clean = str(query).strip()
         q_lower = q_clean.lower()
+
+        # Detect the query language (en / hi / hinglish) for cross-lingual routing
+        # and localized answer rendering. Routing keys off the *detected* language;
+        # the optional override only changes the language answers are rendered in.
+        detected_language = detect_language(q_clean)
+        answer_language = str(language).strip().lower() if language else detected_language
+        is_default_fallthrough = False
 
         # 0. Check for ambiguous / non-geospatial requests
         ambiguous_triggers = [
@@ -312,6 +328,30 @@ class SatQueryRouter:
                 reasoning = "Query asks a single-scene visual or semantic interrogation question."
                 confidence = 0.90 if is_question_form else 0.82
                 clarification_needed = False
+                is_default_fallthrough = True
+
+        # Cross-lingual intent recovery: a non-English query that the English
+        # regex ladder could only default to VQA is re-scored by the multilingual
+        # embedder against per-intent anchor phrases. This replaces the previous
+        # silent default-to-VQA for Hindi/Hinglish with a real, similarity-ranked
+        # task selection (the score is a genuine cosine, not a fixed constant).
+        if detected_language != "en" and is_default_fallthrough:
+            scored = score_intent(q_clean)
+            if scored is not None:
+                emb_task, emb_sim = scored
+                if emb_sim >= _EMB_INTENT_THRESHOLD and emb_task in self.valid_tasks:
+                    task = TaskName(emb_task)
+                    confidence = round(float(emb_sim), 2)
+                    reasoning = (
+                        f"Multilingual embedding intent match for {detected_language} "
+                        f"query: nearest task '{emb_task}' at cosine {emb_sim:.2f}."
+                    )
+                    clarification_needed = False
+                else:
+                    reasoning += (
+                        f" (Non-English '{detected_language}' query; top embedding "
+                        f"score {emb_sim:.2f} < {_EMB_INTENT_THRESHOLD:.2f}, kept VQA.)"
+                    )
 
         # Emit ordered execution graph (DAG) for multi-step reasoning
         execution_graph = planner.build_execution_graph(q_clean, primary_task=str(task))
@@ -357,31 +397,37 @@ class SatQueryRouter:
             "reasoning": reasoning,
             "query": q_clean,
             "clarification_needed": clarification_needed,
+            "language": answer_language,
+            "detected_language": detected_language,
             "target_pipeline": str(task).lower(),
             "handler": f"models.{str(task).lower()}",
         }
 
-    def route(self, query: str, trace: Optional[Any] = None) -> Dict[str, Any]:
+    def route(self, query: str, trace: Optional[Any] = None,
+              language: Optional[str] = None) -> Dict[str, Any]:
         """Convenience alias for classify_intent."""
-        return self.classify_intent(query, trace=trace)
+        return self.classify_intent(query, trace=trace, language=language)
 
-    def route_query(self, query: str, trace: Optional[Any] = None) -> Dict[str, Any]:
+    def route_query(self, query: str, trace: Optional[Any] = None,
+                    language: Optional[str] = None) -> Dict[str, Any]:
         """Legacy compatibility alias for classify_intent."""
-        return self.classify_intent(query, trace=trace)
+        return self.classify_intent(query, trace=trace, language=language)
 
 
 # Global singleton instance
 query_router = SatQueryRouter()
 
 
-def route(query: str, trace: Optional[Any] = None) -> Dict[str, Any]:
+def route(query: str, trace: Optional[Any] = None,
+          language: Optional[str] = None) -> Dict[str, Any]:
     """Top-level route function mapping a natural language query to {task, tools}."""
-    return query_router.classify_intent(query, trace=trace)
+    return query_router.classify_intent(query, trace=trace, language=language)
 
 
-def classify_intent(query: str, trace: Optional[Any] = None) -> Dict[str, Any]:
+def classify_intent(query: str, trace: Optional[Any] = None,
+                    language: Optional[str] = None) -> Dict[str, Any]:
     """Top-level classify_intent function mapping a natural language query to {task, tools}."""
-    return query_router.classify_intent(query, trace=trace)
+    return query_router.classify_intent(query, trace=trace, language=language)
 
 
 __all__ = [

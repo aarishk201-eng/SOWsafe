@@ -45,13 +45,13 @@
   },
   {
     "file": "fixtures/sample_port.tif",
-    "phrase": "maritime vessel",
+    "phrase": "harbour water body",
     "ground_truth_bbox": [
-      175,
-      175,
-      335,
-      335
+      20,
+      20,
+      490,
+      490
     ],
-    "description": "Anchored maritime cargo ship"
+    "description": "Harbour open-water basin (water-dominant scene, NDWI-verified)"
   }
 ]

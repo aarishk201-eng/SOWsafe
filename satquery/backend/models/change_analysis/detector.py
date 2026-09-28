@@ -335,7 +335,6 @@ def detect(
     change_detected = changed_pixels >= min_change_pixels
     change_pct = round((changed_pixels / total_valid_pixels) * 100, 2)
 
-    confidence = 0.95
     if change_detected and std_diff > 1e-6:
         # Calculate the mean Z-score of the changed pixels
         changed_magnitudes = cva_magnitude[cleaned_mask == 1]
@@ -346,6 +345,16 @@ def detect(
         confidence = 0.5 * (1.0 + math.erf(z_score / math.sqrt(2.0)))
         # Bound confidence between [0.0, 1.0] and cap at 0.99 for numerical stability
         confidence = max(0.0, min(0.99, float(confidence)))
+    else:
+        # No change detected: the confidence in the *no-change* conclusion is the
+        # real fraction of valid pixels whose CVA magnitude stays within the noise
+        # band (<= dynamic threshold). This is a data-derived certainty, not a
+        # fabricated constant — it drops when many pixels hover near the threshold.
+        if np.any(valid_mask):
+            within_noise = cva_magnitude[valid_mask] <= thresh
+            confidence = max(0.0, min(0.99, float(np.mean(within_noise))))
+        else:
+            confidence = 0.5
 
     return ChangeMask(
         cleaned_mask,

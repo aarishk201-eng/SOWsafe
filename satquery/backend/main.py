@@ -6,6 +6,7 @@ import tempfile
 from fastapi import FastAPI, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from agents.router import query_router
+from agents.language import detect_language
 from agents.planner import ExecutionPlanner, build_task_graph, execute
 from agents.registry import ToolRegistry
 from agents.trace import TraceBuilder
@@ -284,14 +285,17 @@ async def visual_question_answering(request: Request):
     try:
         image_path = None
         question = None
+        language = None
 
         if "application/json" in content_type:
             body = await request.json()
             image_path = body.get("image") or body.get("image_path")
             question = body.get("question")
+            language = body.get("language")
         elif "multipart/form-data" in content_type or "application/x-www-form-urlencoded" in content_type:
             form = await request.form()
             question = form.get("question")
+            language = form.get("language")
             uploaded = form.get("image") or form.get("file")
             # Starlette's TestClient yields starlette.datastructures.UploadFile,
             # which is not always an instance of fastapi.UploadFile — duck-type it.
@@ -307,11 +311,14 @@ async def visual_question_answering(request: Request):
         else:
             image_path = request.query_params.get("image")
             question = request.query_params.get("question")
+            language = request.query_params.get("language")
 
         if not image_path:
             raise HTTPException(status_code=400, detail="Missing 'image' parameter in request.")
         if not question:
             raise HTTPException(status_code=400, detail="Missing 'question' parameter in request.")
+
+        lang = str(language).strip().lower() if language else detect_language(str(question))
 
         try:
             # Validate raster integrity & georeferencing (CRS presence)
@@ -323,23 +330,33 @@ async def visual_question_answering(request: Request):
                 passed=True,
                 detail=f"CRS={dump.get('crs', '?')}, bands={dump.get('band_count', '?')}",
             )
-            tb.log_model(
-                "VQA LoRA Adapted",
-                version="1.2.0-lora",
-                reason="Single-scene visual question answering over satellite imagery",
-            )
-            answer = vqa_predict(str(image_path), str(question))
+            answer = vqa_predict(str(image_path), str(question), language=lang)
+            _vqa_conf = getattr(answer, "confidence", None)
+            if _vqa_conf is None and isinstance(answer, dict):
+                _vqa_conf = answer.get("confidence")
+            # Honest model attribution: report the RS-trained land-cover adapter
+            # only when it was actually applied to this scene (real 3-band RGB
+            # inputs); otherwise report the deterministic multispectral analyzer.
+            _ev = getattr(answer, "evidence", None) or {}
+            if _ev.get("adapter_used"):
+                tb.log_model(
+                    "RS Land-Cover Adapter (trained on Sentinel-2)",
+                    version="rs-adapter-1.0",
+                    reason="Temperature-calibrated Gaussian land-cover classifier fit on the real bundled Sentinel-2 RGB tiles and served at inference.",
+                )
+            else:
+                tb.log_model(
+                    "RS-VQA Spectral Analyzer",
+                    version="vqa-spectral-1.0",
+                    reason="Pixel-grounded spectral visual question answering over satellite imagery (NDVI/NDWI/brightness).",
+                )
             tb.log_evidence(
                 "models.vqa.predict",
                 prediction=answer if isinstance(answer, str) else str(answer),
-                confidence=(
-                    float(answer.get("confidence", 0.85))
-                    if isinstance(answer, dict)
-                    else 0.85
-                ),
-                metadata={"question": question},
+                confidence=float(_vqa_conf) if _vqa_conf is not None else 0.0,
+                metadata={"question": question, "language": lang},
             )
-            return {"answer": answer, "trace": tb.build()}
+            return {"answer": answer, "trace": tb.build(), "language": lang}
         except GeoTiffValidationError as e:
             tb.log_validation("GeoTIFF integrity", passed=False, detail=str(e))
             raise HTTPException(status_code=400, detail=f"Invalid or non-georeferenced raster: {str(e)}")
@@ -400,16 +417,27 @@ async def scene_captioning(request: Request):
                 passed=True,
                 detail=f"CRS={dump.get('crs', '?')}, bands={dump.get('band_count', '?')}",
             )
-            tb.log_model(
-                "Scene Captioning (RS-adapted)",
-                version="1.0.0",
-                reason="Single-scene natural-language description / captioning of satellite imagery",
-            )
             answer = vqa_caption(str(image_path))
+            _cap_conf = getattr(answer, "confidence", None)
+            # Honest attribution: name the RS-trained adapter only when it drove
+            # this caption (real 3-band RGB scenes); else the spectral analyzer.
+            _cap_ev = getattr(answer, "evidence", None) or {}
+            if _cap_ev.get("adapter_used"):
+                tb.log_model(
+                    "RS Land-Cover Adapter (trained on Sentinel-2)",
+                    version="rs-adapter-1.0",
+                    reason="Single-scene captioning whose land-cover label comes from the trained RS adapter served at inference.",
+                )
+            else:
+                tb.log_model(
+                    "Scene Captioning (spectral)",
+                    version="1.0.0",
+                    reason="Single-scene natural-language description / captioning grounded in pixel spectral indices (NDVI/NDWI/brightness).",
+                )
             tb.log_evidence(
                 "models.vqa.caption",
                 prediction=str(answer),
-                confidence=float(getattr(answer, "confidence", 0.85)),
+                confidence=float(_cap_conf) if _cap_conf is not None else 0.0,
                 metadata={"task": "captioning"},
             )
             return {"answer": answer, "trace": tb.build()}
@@ -724,7 +752,7 @@ async def change_vqa_endpoint(request: Request):
             tb.log_evidence(
                 "models.grounding.locate",
                 prediction="change_location",
-                confidence=0.90,
+                confidence=float(mask.confidence),
                 metadata={
                     "bbox": evidence.get("bbox"),
                     "location": evidence.get("location"),
@@ -733,7 +761,7 @@ async def change_vqa_endpoint(request: Request):
             tb.log_evidence(
                 "models.change_analysis.change_vqa",
                 prediction=answer if isinstance(answer, str) else str(answer),
-                confidence=0.90,
+                confidence=float(mask.confidence),
                 metadata={"question": question},
             )
             trace_dict = tb.build()
@@ -761,7 +789,7 @@ async def change_vqa_endpoint(request: Request):
                 "visual_evidence": {
                     "bbox": evidence["bbox"],
                     "location": evidence["location"],
-                    "confidence": 0.90,
+                    "confidence": float(mask.confidence),
                     "status": "available" if evidence["bbox"] else "no_bbox_detected",
                 },
                 "execution_trace": trace_dict,
@@ -945,20 +973,25 @@ async def route_query_endpoint(request: Request):
     """
     content_type = request.headers.get("content-type", "")
     query = ""
+    language = None
     if "application/json" in content_type:
         body = await request.json()
         query = body.get("query") or body.get("prompt") or body.get("question") or ""
+        language = body.get("language")
     elif "multipart/form-data" in content_type or "application/x-www-form-urlencoded" in content_type:
         form = await request.form()
         query = form.get("query") or form.get("prompt") or form.get("question") or ""
+        language = form.get("language")
     else:
         query = request.query_params.get("query") or request.query_params.get("prompt") or ""
+        language = request.query_params.get("language")
 
     if not query:
         raise HTTPException(status_code=400, detail="Missing 'query' parameter.")
 
+    lang = str(language).strip().lower() if language else None
     tb = TraceBuilder(endpoint="/route", query=str(query))
-    result = query_router.classify_intent(str(query), trace=tb)
+    result = query_router.classify_intent(str(query), trace=tb, language=lang)
     # execution_steps is already serialisable (list of dicts from planner)
     tb.log_execution_steps(result.get("plan", []))
     serialisable_result = dict(result)
@@ -979,6 +1012,7 @@ async def query_endpoint(request: Request):
     query = ""
     raw_images = []
     temp_files = []
+    language = None
 
     if "application/json" in content_type:
         try:
@@ -987,10 +1021,12 @@ async def query_endpoint(request: Request):
             body = {}
         query = body.get("query") or body.get("prompt") or body.get("question") or ""
         raw_images = body.get("images") or body.get("files") or body.get("rasters") or []
+        language = body.get("language")
     elif "multipart/form-data" in content_type or "application/x-www-form-urlencoded" in content_type:
         form = await request.form()
         query = form.get("query") or form.get("prompt") or form.get("question") or ""
-        
+        language = form.get("language")
+
         # Collect all possible file fields
         raw_images = []
         for key in ["images", "files"]:
@@ -1002,6 +1038,7 @@ async def query_endpoint(request: Request):
     else:
         query = request.query_params.get("query") or request.query_params.get("prompt") or ""
         raw_images = request.query_params.getlist("images") or []
+        language = request.query_params.get("language")
 
     try:
         images = []
@@ -1024,14 +1061,17 @@ async def query_endpoint(request: Request):
         else:
             images = [raw_images] if raw_images is not None else []
 
+        # Resolve the answer-rendering language (explicit override else auto-detect).
+        lang = str(language).strip().lower() if language else detect_language(str(query))
+
         # Classify task
-        classified = query_router.classify_intent(str(query))
+        classified = query_router.classify_intent(str(query), language=lang)
         task_name = str(classified.get("task", "vqa")).lower()
 
         # Build and execute task graph
         try:
             graph = build_task_graph(str(query), images=images, primary_task=task_name)
-            exec_result = execute(graph, images=images)
+            exec_result = execute(graph, images=images, language=lang)
         except Exception as e:
             import uuid
             query_id = uuid.uuid4().hex
@@ -1091,7 +1131,13 @@ async def query_endpoint(request: Request):
                 if isinstance(final_val, dict) and "summary" in final_val:
                     answer_text = str(final_val["summary"])
                 else:
-                    answer_text = "Query executed and verified successfully."
+                    _steps = exec_result.completed_steps or []
+                    answer_text = (
+                        "Analysis completed across "
+                        f"{len(_steps)} pipeline step(s)"
+                        + (f" ({', '.join(_steps)})" if _steps else "")
+                        + "; see the structured evidence and execution trace for details."
+                    )
 
         # 2. Before / After UI Panel Payload
         before_after_payload = None
@@ -1143,12 +1189,12 @@ async def query_endpoint(request: Request):
             loc_val = (
                 change_vqa_out.get("location")
                 if isinstance(change_vqa_out, dict)
-                else ev.get("location", "central")
+                else ev.get("location")
             )
             conf_val = (
-                change_vqa_out.get("confidence", 0.94)
+                change_vqa_out.get("confidence")
                 if isinstance(change_vqa_out, dict)
-                else (grounding_out.get("confidence", 0.85) if isinstance(grounding_out, dict) else 0.85)
+                else (grounding_out.get("confidence") if isinstance(grounding_out, dict) else None)
             )
             grounding_src = (
                 change_vqa_out.get("grounding_source")
@@ -1156,7 +1202,7 @@ async def query_endpoint(request: Request):
                 else (
                     grounding_out.get("grounding_source")
                     if isinstance(grounding_out, dict) and grounding_out.get("grounding_source")
-                    else ev.get("grounding_source", "owlvit_model")
+                    else ev.get("grounding_source", "unknown")
                 )
             )
             visual_evidence_payload = {
@@ -1170,6 +1216,7 @@ async def query_endpoint(request: Request):
         return {
             "query_id": query_id,
             "answer": answer_text,
+            "language": lang,
             "execution_trace": trace,
             "trace": trace,
             "status": exec_result.status,

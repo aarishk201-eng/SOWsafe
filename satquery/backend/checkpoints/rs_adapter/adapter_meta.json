@@ -1,0 +1,33 @@
+{
+  "classes": [
+    "water",
+    "vegetation",
+    "built_up",
+    "bare_soil"
+  ],
+  "feature_names": [
+    "ndvi",
+    "ndwi",
+    "brightness",
+    "mean_blue",
+    "mean_green",
+    "mean_red",
+    "mean_nir",
+    "visible_spread",
+    "water_fraction",
+    "veg_fraction"
+  ],
+  "temperature": 7.449999999999999,
+  "trained_on": "sentinel2_l2a_gee_subset",
+  "n_tiles_scanned": 1378,
+  "n_train": 1377,
+  "class_distribution": {
+    "water": 695,
+    "vegetation": 45,
+    "built_up": 288,
+    "bare_soil": 349
+  },
+  "labeling": "rgb_visible_band_weak_supervision(VARI+NDWI+brightness)",
+  "domain": "rgb8_3band",
+  "version": "rs-adapter-1.0"
+}

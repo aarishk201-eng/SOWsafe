@@ -33,7 +33,7 @@ class ChangeDetectionModel:
             "change_percentage": mask.change_percentage,
             "changed_pixels": mask.changed_pixels,
             "total_pixels": mask.total_pixels,
-            "confidence": 0.95 if mask.change_detected else 0.99,
+            "confidence": float(mask.confidence),
             "compatibility": mask.compatibility,
         }
 

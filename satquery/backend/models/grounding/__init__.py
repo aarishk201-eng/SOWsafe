@@ -263,95 +263,6 @@ def _owlvit_locate(image_path: str, phrase: str) -> Optional[Dict[str, Any]]:
         return None
 
 
-_STOPWORDS = {"a", "an", "the", "of", "on", "in", "at", "and", "with", "for",
-              "areas", "area", "scene", "some", "any", "this", "that"}
-
-_reference_index: Optional[List[Dict[str, Any]]] = None
-
-
-def _fingerprint(image_path: str) -> Optional[Tuple[float, ...]]:
-    """Per-band mean signature used to recognize a known reference scene.
-
-    Reads real pixels (never the filename) so an uploaded copy of a reference
-    scene is recognized regardless of its temp path.
-    """
-    try:
-        import rasterio
-        with rasterio.open(image_path) as src:
-            bands = src.read().astype(np.float32)
-        if bands.size == 0:
-            return None
-        return tuple(round(float(bands[i].mean()), 2) for i in range(bands.shape[0]))
-    except Exception:
-        return None
-
-
-def _load_reference_index() -> List[Dict[str, Any]]:
-    """Loads curated grounding reference annotations and their scene fingerprints.
-
-    These are the project's hand-labelled benchmark scenes. Recognizing one by
-    its spectral fingerprint lets the grounder return the curated region for that
-    scene; every other image falls through to real OwlViT / spectral computation.
-    """
-    global _reference_index
-    if _reference_index is not None:
-        return _reference_index
-    _reference_index = []
-    import json
-    fixtures_dir = os.path.join(os.path.dirname(__file__), "..", "..", "fixtures")
-    labels_path = os.path.join(fixtures_dir, "grounding_labels.json")
-    try:
-        with open(labels_path, "r") as fh:
-            cases = json.load(fh)
-    except Exception:
-        return _reference_index
-    for case in cases:
-        fpath = os.path.join(fixtures_dir, os.path.basename(case.get("file", "")))
-        if not os.path.exists(fpath):
-            continue
-        fp = _fingerprint(fpath)
-        if fp is None:
-            continue
-        _reference_index.append({
-            "fingerprint": fp,
-            "phrase": str(case.get("phrase", "")),
-            "bbox": list(case.get("ground_truth_bbox", [])) or None,
-        })
-    return _reference_index
-
-
-def _tokens(phrase: str) -> set:
-    return {t for t in phrase.lower().replace("-", " ").split() if t and t not in _STOPWORDS}
-
-
-def _fingerprint_matches(a: Tuple[float, ...], b: Tuple[float, ...]) -> bool:
-    if a is None or b is None or len(a) != len(b):
-        return False
-    for va, vb in zip(a, b):
-        tol = max(1.0, 0.02 * abs(vb))
-        if abs(va - vb) > tol:
-            return False
-    return True
-
-
-def _reference_lookup(image_path: str, phrase: str) -> Optional[List[int]]:
-    """Returns the curated box when the scene AND phrase match a reference."""
-    fp = _fingerprint(image_path)
-    if fp is None:
-        return None
-    q_tokens = _tokens(phrase)
-    q_target = _phrase_to_target(phrase)
-    for ref in _load_reference_index():
-        if not _fingerprint_matches(fp, ref["fingerprint"]):
-            continue
-        r_tokens = _tokens(ref["phrase"])
-        r_target = _phrase_to_target(ref["phrase"])
-        phrase_ok = bool(q_tokens & r_tokens) or (q_target is not None and q_target == r_target)
-        if phrase_ok and ref["bbox"]:
-            return [int(v) for v in ref["bbox"]]
-    return None
-
-
 def _absent_result(phrase: str, source: str) -> Dict[str, Any]:
     """Structured 'not found' result — no fabricated box."""
     return {
@@ -388,31 +299,11 @@ def locate(image_path: str, phrase: str) -> Dict[str, Any]:
 
     target = _phrase_to_target(str(phrase))
 
-    # 1) Curated reference scene recognized by spectral fingerprint: return the
-    #    hand-labelled region for that scene/phrase pair.
-    ref_box = _reference_lookup(str(image_path), str(phrase))
-    if ref_box is not None:
-        area = float((ref_box[2] - ref_box[0]) * (ref_box[3] - ref_box[1]))
-        return {
-            "prediction": target or "object",
-            "confidence": 0.9,
-            "bbox": ref_box,
-            "evidence": {
-                "bbox": ref_box,
-                "area": area,
-                "mask": None,
-                "phrase": str(phrase),
-                "target_class": target,
-            },
-            "grounding_source": base_source,
-            "source_tool": "grounding",
-        }
-
-    # 2) Phrase does not describe a verifiable land-cover class -> not found.
+    # 1) Phrase does not describe a verifiable land-cover class -> not found.
     if target is None:
         return _absent_result(phrase, base_source)
 
-    # 3) Present class: localize with OwlViT, falling back to a spectral map.
+    # 2) Present class: localize with OwlViT, falling back to a spectral map.
     bbox: Optional[List[int]] = None
     source = base_source
     owl_score = 0.0

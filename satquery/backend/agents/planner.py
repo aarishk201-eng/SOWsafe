@@ -500,6 +500,19 @@ def execute(
     completed_steps: List[str] = []
     step_outputs: Dict[str, Any] = {}
     context = dict(context or {})
+
+    # Resolve the answer-rendering language once (explicit override, else context,
+    # else auto-detected from the query). Real evidence values are unchanged; only
+    # natural-language scaffolding is localized downstream.
+    resolved_language = str(kwargs.get("language") or context.get("language") or "").strip().lower()
+    if not resolved_language:
+        try:
+            from agents.language import detect_language
+            resolved_language = detect_language(str(getattr(graph, "query", "") or ""))
+        except Exception:
+            resolved_language = "en"
+    context["language"] = resolved_language
+
     models_used: List[str] = []
     validation_info: Dict[str, Any] = {"status": "unverified", "passed": False, "checks": []}
     task_name = str(getattr(graph, "task", getattr(graph, "primary_task", "analysis")))
@@ -671,9 +684,9 @@ def execute(
                     if "optical_model" not in models_used:
                         models_used.append("optical_model")
                 except Exception as e:
-                    step_outputs["optical"] = {"prediction": "built_up", "confidence": 0.85, "evidence": {"bbox": None, "area": None, "mask": None}, "error": str(e)}
+                    step_outputs["optical"] = {"prediction": "unavailable", "confidence": 0.0, "evidence": {"bbox": None, "area": None, "mask": None}, "status": "degraded", "error": str(e)}
             else:
-                step_outputs["optical"] = {"prediction": "built_up", "confidence": 0.85, "evidence": {"bbox": None, "area": None, "mask": None}}
+                step_outputs["optical"] = {"prediction": "unavailable", "confidence": 0.0, "evidence": {"bbox": None, "area": None, "mask": None}, "status": "unavailable", "error": "optical analyzer or image unavailable"}
             completed_steps.append("OPTICAL_ANALYSIS")
 
         elif step_name == "SAR_ANALYSIS":
@@ -693,9 +706,9 @@ def execute(
                     if "sar_model" not in models_used:
                         models_used.append("sar_model")
                 except Exception as e:
-                    step_outputs["sar"] = {"prediction": "built_up", "confidence": 0.88, "evidence": {"bbox": None, "area": None, "mask": None}, "error": str(e)}
+                    step_outputs["sar"] = {"prediction": "unavailable", "confidence": 0.0, "evidence": {"bbox": None, "area": None, "mask": None}, "status": "degraded", "error": str(e)}
             else:
-                step_outputs["sar"] = {"prediction": "built_up", "confidence": 0.88, "evidence": {"bbox": None, "area": None, "mask": None}}
+                step_outputs["sar"] = {"prediction": "unavailable", "confidence": 0.0, "evidence": {"bbox": None, "area": None, "mask": None}, "status": "unavailable", "error": "SAR analyzer or image unavailable"}
             completed_steps.append("SAR_ANALYSIS")
 
         elif step_name == "CHANGE_DETECTION":
@@ -709,7 +722,7 @@ def execute(
                         step_outputs["change_mask"] = ch_mask
                         step_outputs["change"] = {
                             "prediction": "change_detected" if ch_mask.change_detected else "no_change",
-                            "confidence": 0.95 if ch_mask.change_detected else 0.99,
+                            "confidence": float(ch_mask.confidence),
                             "evidence": {
                                 "bbox": None,
                                 "area": float(ch_mask.changed_pixels),
@@ -734,15 +747,15 @@ def execute(
                 from evidence.confidence import fuse_evidence
             except ImportError:
                 fuse_evidence = None
-            opt_data = step_outputs.get("optical", {"prediction": "built_up", "confidence": 0.85})
-            sar_data = step_outputs.get("sar", {"prediction": "built_up", "confidence": 0.88})
+            opt_data = step_outputs.get("optical", {"prediction": "unavailable", "confidence": 0.0, "evidence": {"bbox": None, "area": None, "mask": None}})
+            sar_data = step_outputs.get("sar", {"prediction": "unavailable", "confidence": 0.0, "evidence": {"bbox": None, "area": None, "mask": None}})
             if fuse_evidence:
                 fused = fuse_evidence(optical=opt_data, sar=sar_data)
                 step_outputs["fusion"] = fused
                 if "fusion_model" not in models_used:
                     models_used.append("fusion_model")
             else:
-                step_outputs["fusion"] = {"prediction": "built_up", "confidence": 0.86, "evidence": {"bbox": None, "area": None, "mask": None, "agreement": "high"}}
+                step_outputs["fusion"] = {"prediction": "unavailable", "confidence": 0.0, "evidence": {"bbox": None, "area": None, "mask": None, "agreement": "low"}, "status": "unavailable", "error": "fusion module unavailable"}
             completed_steps.append("FUSION")
 
         elif step_name == "GROUNDING":
@@ -759,7 +772,10 @@ def execute(
                     ground_res = locate(str(ground_img), phrase=q_phrase)
                     if isinstance(ground_res, dict):
                         if "evidence" not in ground_res or ground_res.get("evidence") is None:
-                            ground_res["evidence"] = {"bbox": ground_res.get("bbox"), "area": 2500.0, "mask": None}
+                            _gb = ground_res.get("bbox")
+                            _garea = (float((_gb[2] - _gb[0]) * (_gb[3] - _gb[1]))
+                                      if isinstance(_gb, (list, tuple)) and len(_gb) == 4 else None)
+                            ground_res["evidence"] = {"bbox": _gb, "area": _garea, "mask": None}
                         if "prediction" not in ground_res:
                             ground_res["prediction"] = "target_footprint"
                         ground_res["source_tool"] = "grounding_model"
@@ -780,7 +796,7 @@ def execute(
                         bbox = ch_ev.get("bbox")
                         ground_res = {
                             "prediction": "change_location",
-                            "confidence": 0.90,
+                            "confidence": float(getattr(step_outputs["change_mask"], "confidence", 0.0)),
                             "bbox": bbox,
                             "grounding_source": "change_mask_fallback",
                             "evidence": {
@@ -798,12 +814,13 @@ def execute(
 
             if ground_res is None:
                 ground_res = {
-                    "prediction": "target_footprint",
-                    "confidence": 0.85,
-                    "bbox": [100, 100, 150, 150],
-                    "grounding_source": "change_mask_fallback",
-                    "evidence": {"bbox": [100, 100, 150, 150], "area": 2500.0, "mask": None},
+                    "prediction": "not_found",
+                    "confidence": 0.0,
+                    "bbox": None,
+                    "grounding_source": "unavailable",
+                    "evidence": {"bbox": None, "area": None, "mask": None},
                     "source_tool": "grounding_model",
+                    "status": "unavailable",
                 }
 
             step_outputs["grounding"] = ground_res
@@ -847,14 +864,14 @@ def execute(
             q_text = getattr(graph, "query", "What is visible?")
             if predict and os.path.exists(vqa_img):
                 try:
-                    vqa_ans = predict(str(vqa_img), q_text)
+                    vqa_ans = predict(str(vqa_img), q_text, language=context.get("language", "en"))
                     step_outputs["vqa"] = vqa_ans
                     if "vqa_model" not in models_used:
                         models_used.append("vqa_model")
                 except Exception as e:
-                    step_outputs["vqa"] = {"answer": "built_up", "prediction": "built_up", "confidence": 0.85, "evidence": {"bbox": None, "area": None, "mask": None}}
+                    step_outputs["vqa"] = {"answer": f"VQA analysis unavailable: {e}", "prediction": "unavailable", "confidence": 0.0, "evidence": {"bbox": None, "area": None, "mask": None}, "status": "degraded", "error": str(e)}
             else:
-                step_outputs["vqa"] = {"answer": "built_up", "prediction": "built_up", "confidence": 0.85, "evidence": {"bbox": None, "area": None, "mask": None}}
+                step_outputs["vqa"] = {"answer": "VQA analysis unavailable: model or image not available.", "prediction": "unavailable", "confidence": 0.0, "evidence": {"bbox": None, "area": None, "mask": None}, "status": "unavailable"}
             completed_steps.append("VQA")
 
         elif step_name == "ANSWER":

@@ -44,6 +44,12 @@ from .eval_utils import (
     get_adapted_model,
     get_val_set,
 )
+from .rs_adapter import (
+    load_rs_adapter,
+    is_rs_adapted,
+    features_from_dict,
+    SERVED_CLASSES as _RS_SERVED_CLASSES,
+)
 
 
 # --------------------------------------------------------------------------- #
@@ -62,7 +68,18 @@ def _analyze_scene(image_path: Union[str, Path]) -> Dict[str, Any]:
         count = src.count
 
     max_val = float(np.nanmax(bands)) if bands.size else 0.0
-    norm = bands / 10000.0 if max_val > 10.0 else bands
+    # Normalize to reflectance-like [0, 1] according to the input dynamic range:
+    #   > 255  -> Sentinel-2 L2A digital numbers (0..~10000)  -> / 10000
+    #   > 1.5  -> 8-bit imagery (0..255)                       -> / 255
+    #   else   -> already reflectance-normalized (0..1)        -> as-is
+    # (The previous code divided everything > 10 by 10000, which collapsed 8-bit
+    # RGB tiles to ~0.005 and made every derived index meaningless.)
+    if max_val > 255.0:
+        norm = bands / 10000.0
+    elif max_val > 1.5:
+        norm = bands / 255.0
+    else:
+        norm = bands
 
     if count >= 4:
         blue, green, red, nir = norm[0], norm[1], norm[2], norm[3]
@@ -129,19 +146,55 @@ def _analyze_scene(image_path: Union[str, Path]) -> Dict[str, Any]:
     else:
         prediction, confidence = "bare_soil", 0.78
 
-    return {
+    result = {
         "prediction": prediction,
         "confidence": round(float(confidence), 4),
         "ndvi": round(ndvi, 4),
         "ndwi": round(ndwi, 4),
         "brightness": round(brightness, 4),
+        "mean_blue": round(mean_blue, 4),
+        "mean_green": round(mean_green, 4),
+        "mean_red": round(mean_red, 4),
+        "mean_nir": round(mean_nir, 4),
+        "visible_spread": round(float(visible_spread), 4),
         "cloud_score": round(cloud_score, 4),
         "cloud_occluded": cloud_occluded,
         "structure_count": int(structure_count),
         "water_fraction": round(water_fraction, 4),
         "veg_fraction": round(veg_fraction, 4),
         "band_count": count,
+        "adapter_used": False,
     }
+
+    # Real trained land-cover adapter (Phase 4). The adapter is trained on the
+    # bundled real Sentinel-2 tiles, which are 3-band (RGB, no NIR) imagery, so it
+    # is consulted only for same-domain 3-band scenes — the regime it actually
+    # learned. For >=4-band multispectral scenes the real NIR-based optical physics
+    # above is authoritative and already produces data-varying confidence, so the
+    # adapter is intentionally NOT applied there (it must never degrade a genuine
+    # NDVI/NDWI decision). Cloud occlusion is a physical precheck, not a land-cover
+    # class, so it is never overridden. Any failure falls back silently to the
+    # physics decision, so the served path can never raise because of the adapter.
+    if not cloud_occluded and count == 3:
+        try:
+            adapter = load_rs_adapter()
+            if adapter is not None:
+                feat = features_from_dict(result)
+                a_label, a_conf, a_post = adapter.predict_proba(feat)
+                result["adapter_prediction"] = a_label
+                result["adapter_confidence"] = a_conf
+                result["adapter_posterior"] = a_post
+                # On RGB scenes the deterministic tree cannot see NIR, so the
+                # RGB-trained adapter is the domain expert: adopt its label and its
+                # real temperature-calibrated posterior as the served confidence.
+                result["prediction"] = a_label
+                result["confidence"] = round(float(a_conf), 4)
+                result["adapter_used"] = True
+        except Exception:
+            # Graceful fallback: keep the physics prediction/confidence as-is.
+            result["adapter_used"] = False
+
+    return result
 
 
 _HUMAN_LABEL = {
@@ -214,54 +267,143 @@ class VQAAnswer(str):
         }
 
 
-def _build_answer_text(question: str, scene: Dict[str, Any]) -> str:
-    """Composes a question-aware, pixel-grounded natural-language answer."""
-    import re
+# Localized land-cover labels for en / hi (Devanagari) / hinglish (romanized).
+# Only the linguistic scaffolding is translated here; every numeric value the
+# answer renders alongside a label is the real, per-image computed quantity.
+_HUMAN_LABEL_I18N = {
+    "en": _HUMAN_LABEL,
+    "hi": {
+        "water": "एक खुला जल निकाय",
+        "vegetation": "घनी वनस्पति / वन आवरण",
+        "built_up": "निर्मित / शहरी संरचनाएँ",
+        "bare_soil": "शुष्क बंजर मृदा",
+        "cloud_occluded": "बादल से ढका भूभाग",
+    },
+    "hinglish": {
+        "water": "ek khula water body (jal-nikay)",
+        "vegetation": "ghani vegetation / forest cover",
+        "built_up": "built-up / urban structures",
+        "bare_soil": "sukhi bare soil (banjar mitti)",
+        "cloud_occluded": "cloud se dhaka terrain",
+    },
+}
 
-    q = question.lower().strip()
+# Multilingual sub-intent lexicons (English + Devanagari Hindi + romanized
+# Hinglish). They only select WHICH real evidence answers the question; they
+# never contain any answer text or hardcoded value.
+_WATER_WORDS = ("water", "lake", "river", "ocean", "sea", "reservoir", "pond",
+                "flood", "coast", "पानी", "जल", "झील", "नदी", "समुद्र", "जलाशय",
+                "paani", "pani", "jal", "jheel", "nadi", "samundar", "talab")
+_VEG_WORDS = ("veg", "forest", "tree", "crop", "agri", "green", "canopy", "farm",
+              "वनस्पति", "पेड़", "जंगल", "फसल", "हरियाली", "खेत", "वन", "vegetation",
+              "ped", "jungle", "jangal", "fasal", "hariyali", "khet", "hara")
+_BUILT_WORDS = ("build", "urban", "city", "structure", "infrastructur", "road",
+                "residential", "house", "शहर", "इमारत", "भवन", "निर्माण", "सड़क",
+                "मकान", "shahar", "imarat", "sadak", "makan", "nirman", "building")
+_COUNT_WORDS = ("how many", "how much", "count", "number of", "quantity", "tally",
+                "कितने", "कितनी", "कितना", "संख्या", "गिनती",
+                "kitne", "kitni", "kitna", "ginti", "sankhya")
+
+# Localized answer templates. Placeholders are filled with the REAL computed
+# spectral quantities; the sentence scaffolding is the only localized part.
+_ANSWER_TEMPLATES = {
+    "count": {
+        "en": "Approximately {n} discrete high-reflectance structures are visible from this nadir view (mean brightness {bright}, dominant cover: {label}).",
+        "hi": "इस दृश्य में लगभग {n} पृथक उच्च-परावर्तन संरचनाएँ दिखाई देती हैं (औसत चमक {bright}, प्रमुख आवरण: {label})।",
+        "hinglish": "Is scene me lagbhag {n} alag high-reflectance structures dikhte hain (mean brightness {bright}, dominant cover: {label}).",
+    },
+    "water_yes": {
+        "en": "Yes, open water is present: NDWI {ndwi} with low near-infrared reflectance indicates a smooth water surface across roughly {water_pct}% of the scene.",
+        "hi": "हाँ, खुला जल मौजूद है: NDWI {ndwi} और कम निकट-अवरक्त परावर्तन दृश्य के लगभग {water_pct}% भाग में जल सतह दर्शाते हैं।",
+        "hinglish": "Haan, open water present hai: NDWI {ndwi} aur kam near-infrared reflectance batate hain ki scene ke lagbhag {water_pct}% hisse me paani hai.",
+    },
+    "water_no": {
+        "en": "No significant open water body is present (NDWI {ndwi}); the dominant surface is {label}.",
+        "hi": "कोई उल्लेखनीय खुला जल निकाय मौजूद नहीं है (NDWI {ndwi}); प्रमुख सतह {label} है।",
+        "hinglish": "Koi khaas open water body nahi hai (NDWI {ndwi}); dominant surface {label} hai.",
+    },
+    "veg_yes": {
+        "en": "Yes, vegetation is present: NDVI {ndvi} indicates healthy canopy over about {veg_pct}% of the scene.",
+        "hi": "हाँ, वनस्पति मौजूद है: NDVI {ndvi} दृश्य के लगभग {veg_pct}% भाग में स्वस्थ आवरण दर्शाता है।",
+        "hinglish": "Haan, vegetation present hai: NDVI {ndvi} batata hai ki scene ke lagbhag {veg_pct}% hisse me healthy canopy hai.",
+    },
+    "veg_no": {
+        "en": "Little to no vegetation is present (NDVI {ndvi}); the scene is dominated by {label}.",
+        "hi": "बहुत कम या कोई वनस्पति नहीं है (NDVI {ndvi}); दृश्य में मुख्यतः {label} है।",
+        "hinglish": "Bahut kam ya koi vegetation nahi hai (NDVI {ndvi}); scene me mukhyata {label} hai.",
+    },
+    "built_yes": {
+        "en": "Yes, built-up structures are present: high geometric reflectance (brightness {bright}, low NDVI {ndvi}) consistent with urban fabric.",
+        "hi": "हाँ, निर्मित संरचनाएँ मौजूद हैं: उच्च ज्यामितीय परावर्तन (चमक {bright}, निम्न NDVI {ndvi}) शहरी बनावट के अनुरूप है।",
+        "hinglish": "Haan, built-up structures present hain: high geometric reflectance (brightness {bright}, low NDVI {ndvi}) urban fabric jaisa hai.",
+    },
+    "built_no": {
+        "en": "No dominant built-up signature is present; the scene is primarily {label}.",
+        "hi": "कोई प्रमुख निर्मित हस्ताक्षर मौजूद नहीं है; दृश्य मुख्यतः {label} है।",
+        "hinglish": "Koi dominant built-up signature nahi hai; scene mukhyata {label} hai.",
+    },
+    "cloud": {
+        "en": "The scene is heavily cloud-occluded (cloud score {cloud}); surface land cover cannot be reliably determined.",
+        "hi": "दृश्य अत्यधिक बादल से ढका है (बादल स्कोर {cloud}); सतही भू-आवरण विश्वसनीय रूप से निर्धारित नहीं किया जा सकता।",
+        "hinglish": "Scene bahut zyada cloud se dhaka hai (cloud score {cloud}); surface land cover theek se determine nahi ho sakta.",
+    },
+    "default": {
+        "en": "The predominant land cover is {label} (NDVI {ndvi}, NDWI {ndwi}, brightness {bright}); about {veg_pct}% vegetation and {water_pct}% water pixels with {n} discrete bright structures.",
+        "hi": "प्रमुख भू-आवरण {label} है (NDVI {ndvi}, NDWI {ndwi}, चमक {bright}); लगभग {veg_pct}% वनस्पति और {water_pct}% जल पिक्सेल, तथा {n} पृथक चमकीली संरचनाएँ।",
+        "hinglish": "Predominant land cover {label} hai (NDVI {ndvi}, NDWI {ndwi}, brightness {bright}); lagbhag {veg_pct}% vegetation aur {water_pct}% water pixels, aur {n} alag bright structures.",
+    },
+}
+
+
+def _build_answer_text(question: str, scene: Dict[str, Any], language: str = "en") -> str:
+    """Composes a question-aware, pixel-grounded answer in the requested language.
+
+    Sub-intent is detected from the multilingual lexicon so an English, Hindi or
+    Hinglish question selects the same evidence-grounded template. Every numeric
+    value rendered is the real per-image spectral quantity; only the surrounding
+    scaffolding is localized. A question that matches no specific sub-intent
+    gracefully falls back to a full real-evidence scene summary ("ask anything").
+    """
+    lang = language if language in ("en", "hi", "hinglish") else "en"
+    q = str(question).lower().strip()
     pred = scene["prediction"]
-    label = _HUMAN_LABEL.get(pred, pred)
+    labels = _HUMAN_LABEL_I18N.get(lang, _HUMAN_LABEL)
+    label = labels.get(pred, _HUMAN_LABEL.get(pred, pred))
     ndvi, ndwi, bright = scene["ndvi"], scene["ndwi"], scene["brightness"]
 
-    is_count = re.search(r"\b(how many|how much|count|number of|quantity|tally)\b", q)
-    mentions_water = re.search(r"\b(water|lake|river|ocean|sea|reservoir|pond|flood|coast)\w*", q)
-    mentions_veg = re.search(r"\b(veg|forest|tree|crop|agri|green|canopy)\w*", q)
-    mentions_built = re.search(r"\b(build|urban|city|structure|infrastructur|road|residential|house)\w*", q)
-    is_presence = re.search(r"\b(is there|are there|any|present|exist|do you see|can you see|detect)\w*", q)
+    fmt = {
+        "label": label,
+        "n": scene["structure_count"],
+        "bright": f"{bright:.2f}",
+        "ndvi": f"{ndvi:.2f}",
+        "ndwi": f"{ndwi:.2f}",
+        "cloud": f"{scene['cloud_score']:.2f}",
+        "water_pct": f"{scene['water_fraction'] * 100:.0f}",
+        "veg_pct": f"{scene['veg_fraction'] * 100:.0f}",
+    }
 
-    if is_count:
-        n = scene["structure_count"]
-        return (f"Approximately {n} discrete high-reflectance structures are visible from this "
-                f"nadir view (mean brightness {bright:.2f}, dominant cover: {label}).")
+    def has(words):
+        return any(w in q for w in words)
 
-    if mentions_water:
-        if ndwi > 0.05 or bright < 0.06 or scene["water_fraction"] > 0.15:
-            return (f"Yes, open water is present: NDWI {ndwi:.2f} with low near-infrared reflectance "
-                    f"indicates a smooth water surface across roughly {scene['water_fraction']*100:.0f}% of the scene.")
-        return (f"No significant open water body is present (NDWI {ndwi:.2f}); the dominant surface "
-                f"is {label}.")
+    def render(key):
+        return _ANSWER_TEMPLATES[key][lang].format(**fmt)
 
-    if mentions_veg and is_presence:
-        if ndvi > 0.25 or scene["veg_fraction"] > 0.15:
-            return (f"Yes, vegetation is present: NDVI {ndvi:.2f} indicates healthy canopy over about "
-                    f"{scene['veg_fraction']*100:.0f}% of the scene.")
-        return f"Little to no vegetation is present (NDVI {ndvi:.2f}); the scene is dominated by {label}."
-
-    if mentions_built and is_presence:
-        if pred == "built_up":
-            return (f"Yes, built-up structures are present: high geometric reflectance "
-                    f"(brightness {bright:.2f}, low NDVI {ndvi:.2f}) consistent with urban fabric.")
-        return f"No dominant built-up signature is present; the scene is primarily {label}."
-
+    if has(_COUNT_WORDS):
+        return render("count")
+    if has(_WATER_WORDS):
+        present = ndwi > 0.05 or bright < 0.06 or scene["water_fraction"] > 0.15
+        return render("water_yes" if present else "water_no")
+    if has(_VEG_WORDS):
+        present = ndvi > 0.25 or scene["veg_fraction"] > 0.15
+        return render("veg_yes" if present else "veg_no")
+    if has(_BUILT_WORDS):
+        return render("built_yes" if pred == "built_up" else "built_no")
     if scene["cloud_occluded"]:
-        return (f"The scene is heavily cloud-occluded (cloud score {scene['cloud_score']:.2f}); "
-                f"surface land cover cannot be reliably determined.")
-
-    return (f"The predominant land cover is {label} "
-            f"(NDVI {ndvi:.2f}, NDWI {ndwi:.2f}, brightness {bright:.2f}).")
+        return render("cloud")
+    return render("default")
 
 
-def predict(image_path: Union[str, Path], question: str) -> VQAAnswer:
+def predict(image_path: Union[str, Path], question: str, language: str = "en") -> VQAAnswer:
     """Answers a natural-language question about a satellite scene from its pixels.
 
     Returns a ``VQAAnswer`` (a ``str`` subclass) so callers get a plain string
@@ -273,7 +415,7 @@ def predict(image_path: Union[str, Path], question: str) -> VQAAnswer:
         raise ValueError("VQA question must be a non-empty string.")
 
     scene = _analyze_scene(image_path)  # raises FileNotFoundError if missing
-    text = _build_answer_text(str(question), scene)
+    text = _build_answer_text(str(question), scene, language=language)
 
     return VQAAnswer(
         text,
@@ -289,6 +431,9 @@ def predict(image_path: Union[str, Path], question: str) -> VQAAnswer:
             "structure_count": scene["structure_count"],
             "question": str(question),
             "sensor": "optical",
+            "adapter_used": scene.get("adapter_used", False),
+            "adapter_prediction": scene.get("adapter_prediction"),
+            "adapter_confidence": scene.get("adapter_confidence"),
         },
         source_tool="vqa",
     )
@@ -374,16 +519,20 @@ def caption(image_path: Union[str, Path]) -> VQAAnswer:
             "water_fraction": scene["water_fraction"],
             "structure_count": scene["structure_count"],
             "sensor": "optical",
+            "adapter_used": scene.get("adapter_used", False),
+            "adapter_prediction": scene.get("adapter_prediction"),
+            "adapter_confidence": scene.get("adapter_confidence"),
         },
         source_tool="caption",
     )
 
 
-def vqa_analyzer(image_path: Union[str, Path], question: Optional[str] = None) -> Dict[str, Any]:
+def vqa_analyzer(image_path: Union[str, Path], question: Optional[str] = None,
+                 language: str = "en") -> Dict[str, Any]:
     """Structured specialist wrapper returning {prediction, confidence, evidence}."""
     scene = _analyze_scene(image_path)
     q = question or "What is the predominant land cover in this scene?"
-    answer = _build_answer_text(str(q), scene)
+    answer = _build_answer_text(str(q), scene, language=language)
     return {
         "prediction": scene["prediction"],
         "confidence": scene["confidence"],
@@ -407,11 +556,13 @@ class SatelliteVQAModel:
     def __init__(self, adapted: bool = True):
         self.adapted = adapted
 
-    def predict(self, image_path: Union[str, Path], question: str) -> Dict[str, Any]:
-        return vqa_analyzer(image_path, question)
+    def predict(self, image_path: Union[str, Path], question: str,
+                language: str = "en") -> Dict[str, Any]:
+        return vqa_analyzer(image_path, question, language=language)
 
-    def answer(self, image_path: Union[str, Path], question: str) -> str:
-        return str(predict(image_path, question))
+    def answer(self, image_path: Union[str, Path], question: str,
+               language: str = "en") -> str:
+        return str(predict(image_path, question, language=language))
 
 
 # Eagerly instantiated fixtures for zero-argument test functions (offline-safe).
@@ -440,6 +591,8 @@ __all__ = [
     "get_base_model",
     "get_adapted_model",
     "get_val_set",
+    "is_rs_adapted",
+    "load_rs_adapter",
     "base_model",
     "adapted_model",
     "val_set",
