@@ -119,7 +119,7 @@ function renderMapPanel(rm) {
   if (resetBtn) {
     resetBtn.onclick = () => {
       if (state._leaflet && state._mapRows) {
-        state._leaflet.fitBounds(L.latLngBounds(state._mapRows.map((r) => [r.lat, r.lon])).pad(0.6), { maxZoom: 11 });
+        state._leaflet.fitBounds(L.latLngBounds(state._mapRows.map((r) => [r.lat, r.lon])).pad(0.2), { maxZoom: 11 });
       }
     };
   }
@@ -150,6 +150,9 @@ function renderTimeline(det) {
   
   // Stagger markers to avoid text overlap
   ms.sort((a, b) => a.f - b.f);
+  for (let i = 1; i < ms.length; i++) {
+    if (ms[i].f - ms[i-1].f < 0.08) ms[i].f = Math.min(1, ms[i-1].f + 0.08);
+  }
   ms.forEach((m, i) => m.below = (i % 2 !== 0));
   const nowF = (frac(day) * 100).toFixed(1);
   host.innerHTML = `<div class="tl-track"><div class="tl-fill" style="width:${nowF}%"></div>`
@@ -196,7 +199,7 @@ function renderCropwise(det) {
   const host = $("#d-cropwise"); if (!host) return;
   const rows = cropStatuses(det.signals, det.crop, det.sss);
   host.innerHTML = `<div class="panel-title">${t("panel_cropwise")}</div>`
-    + rows.map((r) => `<div class="crop-row"><span class="crop-ic">${cropIcon(r.id)}</span>`
+    + rows.map((r) => `<div class="crop-row" style="${r.id === det.crop ? 'background:rgba(22,163,74,0.1); border:1px solid #16a34a;' : ''}"><span class="crop-ic">${cropIcon(r.id)}</span>`
       + `<div><div class="crop-name">${cropName(r.id)}${r.rep ? `<span class="rep-tag">${t("representative")}</span>` : ""}</div>`
       + `<div class="crop-sub">${t("sss_label")}: ${r.sss}</div></div>`
       + `<span class="status-pill" style="background:${r.c}22;color:${r.c}">${t(r.statusKey)}</span></div>`).join("");

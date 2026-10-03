@@ -122,7 +122,7 @@ function initDashLeaflet(rows) {
     map.invalidateSize();
     try {
       if (map.getSize().x > 0) {
-        map.fitBounds(L.latLngBounds(rows.map((r) => [r.lat, r.lon])).pad(0.6), { maxZoom: 11 });
+        map.fitBounds(L.latLngBounds(rows.map((r) => [r.lat, r.lon])).pad(0.2), { maxZoom: 11 });
       }
     } catch (e) { }
     drawDashField();

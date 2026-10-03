@@ -61,18 +61,17 @@
 
       <section class="dash-grid-top">
         <div class="col-map">
-          <div class="panel map-panel card-3d" style="position:relative;">
+          <div class="panel map-panel card-3d" style="position:relative; padding-top: 1.2rem;">
             <div id="d-map" style="position: absolute; inset:0; z-index: 1;"></div>
-            <button id="d-map-reset" class="btn-3d" style="position: absolute; top: 1rem; right: 1rem; z-index: 999; padding: 0.5rem 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">🔄 Reset Map</button>
             <div class="map-overlay" style="z-index: 10;">
             <div class="map-head">
               <div>
                 <div class="panel-title" data-i18n="panel_forecast7">7-Day Rainfall Forecast</div>
                 <div class="panel-sub" id="d-map-sub"></div>
               </div>
-              <div style="display:flex; gap:0.5rem; align-items:center;">
+              <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap: wrap; justify-content: flex-end;">
                 <div class="field-tabs" id="d-field-tabs"></div>
-                <button id="d-map-reset" class="btn-3d" style="padding: 0.35rem 0.7rem; font-size: 0.78rem;">Reset View</button>
+                <button id="d-map-reset" class="btn-3d" style="padding: 0.35rem 0.7rem; font-size: 0.78rem;">🔄 Reset Map</button>
               </div>
             </div>
             <div class="map-stage">
@@ -86,9 +85,9 @@
               <input id="d-day" type="range" min="0" max="128" value="20" />
               <span class="scrub-date" id="d-day-label"></span>
             </div>
+            </div>
           </div>
         </div>
-
         <div class="col-center">
           <div class="panel">
             <div class="panel-title"><span data-i18n="panel_timeline">Monsoon Timeline</span>
@@ -145,7 +144,7 @@
             </div>
             <div class="panel card-3d" style="height: 300px;">
               <h3 style="margin-bottom: 1rem;">Radar Overlay</h3>
-              <div style="height: 220px; background: radial-gradient(circle at center, rgba(134,239,172,0.6) 0%, rgba(254,240,138,0.5) 40%, rgba(252,165,165,0.7) 100%), url('data:image/svg+xml;utf8,<svg width=\"20\" height=\"20\" viewBox=\"0 0 20 20\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"2\" cy=\"2\" r=\"1\" fill=\"rgba(0,0,0,0.1)\"/></svg>'); opacity: 0.9; border-radius: 12px; border: 1px solid var(--line); display: grid; place-items:center;">
+              <div style="height: 220px; background: radial-gradient(circle at center, rgba(134,239,172,0.6) 0%, rgba(254,240,138,0.5) 40%, rgba(252,165,165,0.7) 100%), url('data:image/svg+xml;utf8,%3Csvg width=\&quot;20\&quot; height=\&quot;20\&quot; viewBox=\&quot;0 0 20 20\&quot; xmlns=\&quot;http://www.w3.org/2000/svg\&quot;%3E%3Ccircle cx=\&quot;2\&quot; cy=\&quot;2\&quot; r=\&quot;1\&quot; fill=\&quot;rgba(0,0,0,0.1)\&quot;/%3E%3C/svg%3E'); opacity: 0.9; border-radius: 12px; border: 1px solid var(--line); display: grid; place-items:center;">
                 <button class="btn-3d" style="padding: .5rem 1rem;">Play Animation</button>
               </div>
             </div>
@@ -178,10 +177,10 @@
           <h2 class="panel-title" style="font-size: 1.4rem;">🌱 Crop Advisory</h2>
           <p class="crop-sub" style="margin-top: .5rem; font-size: .95rem;">Actionable intelligence for specific crops.</p>
           <div class="dash-grid-bottom" style="margin-top: 1.5rem;">
-            <div class="panel card-3d" style="text-align: center;"><div style="font-size: 3rem;">🌾</div><h3>Rice</h3><button class="btn-3d" style="padding: .5rem; margin-top: 1rem; width: 100%;">View Details</button></div>
-            <div class="panel card-3d" style="text-align: center;"><div style="font-size: 3rem;">🫘</div><h3>Soybean</h3><button class="btn-3d" style="padding: .5rem; margin-top: 1rem; width: 100%;">View Details</button></div>
-            <div class="panel card-3d" style="text-align: center;"><div style="font-size: 3rem;">🌿</div><h3>Cotton</h3><button class="btn-3d" style="padding: .5rem; margin-top: 1rem; width: 100%;">View Details</button></div>
-            <div class="panel card-3d" style="text-align: center;"><div style="font-size: 3rem;">🌽</div><h3>Maize</h3><button class="btn-3d" style="padding: .5rem; margin-top: 1rem; width: 100%;">View Details</button></div>
+            <div class="panel card-3d" style="text-align: center;"><div style="font-size: 3rem;">🌾</div><h3>Rice</h3><button class="btn-3d" onclick="alert('Detailed advisory for this crop is coming soon!')" style="padding: .5rem; margin-top: 1rem; width: 100%;">View Details</button></div>
+            <div class="panel card-3d" style="text-align: center;"><div style="font-size: 3rem;">🫘</div><h3>Soybean</h3><button class="btn-3d" onclick="alert('Detailed advisory for this crop is coming soon!')" style="padding: .5rem; margin-top: 1rem; width: 100%;">View Details</button></div>
+            <div class="panel card-3d" style="text-align: center;"><div style="font-size: 3rem;">🌿</div><h3>Cotton</h3><button class="btn-3d" onclick="alert('Detailed advisory for this crop is coming soon!')" style="padding: .5rem; margin-top: 1rem; width: 100%;">View Details</button></div>
+            <div class="panel card-3d" style="text-align: center;"><div style="font-size: 3rem;">🌽</div><h3>Maize</h3><button class="btn-3d" onclick="alert('Detailed advisory for this crop is coming soon!')" style="padding: .5rem; margin-top: 1rem; width: 100%;">View Details</button></div>
           </div>
         </div>
       </div>
@@ -200,7 +199,7 @@
               <button class="btn-3d" style="margin-top:auto; padding:.75rem; font-weight:600; font-size:1.05rem;">Apply Layers</button>
             </div>
             <div style="flex: 1; background: radial-gradient(circle at 30% 30%, rgba(99,102,241,0.15) 0%, rgba(15,23,42,0.8) 100%); display:grid; place-items:center; position:relative;">
-              <div style="position:absolute; inset:0; background:url('data:image/svg+xml;utf8,<svg width=\"40\" height=\"40\" viewBox=\"0 0 40 40\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M0 0h40v40H0z\" fill=\"none\"/><path d=\"M0 39.5h40M39.5 0v40\" stroke=\"rgba(255,255,255,0.05)\" stroke-width=\"1\"/></svg>');"></div>
+              <div style="position:absolute; inset:0; background:url('data:image/svg+xml;utf8,%3Csvg width=\&quot;40\&quot; height=\&quot;40\&quot; viewBox=\&quot;0 0 40 40\&quot; xmlns=\&quot;http://www.w3.org/2000/svg\&quot;%3E%3Cpath d=\&quot;M0 0h40v40H0z\&quot; fill=\&quot;none\&quot;/%3E%3Cpath d=\&quot;M0 39.5h40M39.5 0v40\&quot; stroke=\&quot;rgba(255,255,255,0.05)\&quot; stroke-width=\&quot;1\&quot;/%3E%3C/svg%3E');"></div>
               <h1 style="color: #6366f1; opacity: 0.8; z-index:2; text-shadow: 0 2px 10px rgba(0,0,0,0.8);">[ Map Viewer Context ]</h1>
             </div>
           </div>
@@ -276,7 +275,7 @@
                   <select style="padding:.75rem; border-radius:8px; border:1px solid var(--line); background:#f8fafc; font-size:1rem; cursor:pointer;"><option>Last 30 Days</option><option>Last 90 Days</option><option>Kharif Season 2026</option></select>
                 </label>
               </div>
-              <button class="btn-3d" style="margin-top: 1.5rem; width:100%; padding:1rem; font-size:1.1rem; font-weight:bold; background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); color:#fff; border:none; box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);">Generate Report</button>
+              <button id="btn-gen-report" class="btn-3d" style="margin-top: 1.5rem; width:100%; padding:1rem; font-size:1.1rem; font-weight:bold; background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); color:#fff; border:none; box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);">Generate Report</button>
             </div>
           </div>
         </div>

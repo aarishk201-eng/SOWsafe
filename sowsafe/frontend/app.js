@@ -337,8 +337,6 @@ async function init() {
   simulateModelLoad(() => {
     if (state.surface === "officer") renderDashboard(); else renderFarmer();
   });
-
-  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 }
 
 document.addEventListener("DOMContentLoaded", init);
