@@ -22,6 +22,16 @@
     {
       "name": "live",
       "url": "http://localhost:3000"
+    },
+    {
+      "name": "sowsafe",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m", "uvicorn", "app.main:app",
+        "--app-dir", "C:\\Users\\nafis\\Downloads\\SIH PROJECT 2\\sowsafe\\backend",
+        "--host", "127.0.0.1", "--port", "8077"
+      ],
+      "port": 8077
     }
   ]
 }

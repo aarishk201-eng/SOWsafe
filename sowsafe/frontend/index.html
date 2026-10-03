@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0f5132" />
+  <title>SowSafe — Hyperlocal Sowing Advisory</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <link rel="stylesheet" href="styles_new.css" />
+</head>
+<body data-surface="officer">
+  <div id="model-loader" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(2,6,23,0.85); backdrop-filter:blur(8px); align-items:center; justify-content:center; flex-direction:column; color:#4ade80; font-family:monospace;">
+    <div class="loader-spinner" style="width:50px; height:50px; border:4px solid rgba(74,222,128,0.2); border-top-color:#4ade80; border-radius:50%; animation:spin 1s linear infinite; margin-bottom:1.5rem;"></div>
+    <div id="loader-text" style="font-size:1.2rem; text-shadow:0 0 10px rgba(74,222,128,0.5);">Initializing Model...</div>
+    <style>@keyframes spin { 100% { transform:rotate(360deg); } }</style>
+  </div>
+
+  <!-- ===================== OFFICER DESKTOP DASHBOARD ===================== -->
+  <div class="surface surface-officer">
+    <aside class="sidebar">
+      <div class="brand">
+        <svg class="logo-mark" viewBox="0 0 44 44" aria-hidden="true">
+          <circle cx="22" cy="22" r="21" fill="rgba(255,255,255,.07)" stroke="rgba(255,255,255,.18)"/>
+          <path d="M22 32 C22 24 16 18 11 17 C11 25 16 31 22 32 Z" fill="#4ade80"/>
+          <path d="M22 32 C22 22 28 15 34 14 C34 24 28 31 22 32 Z" fill="#22c55e"/>
+          <path d="M22 33 L22 23" stroke="#166534" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <div class="wordmark">
+          <div class="wm-row"><span class="wm-sow">SOW</span><span class="wm-safe">SAFE</span></div>
+          <div class="wm-tag" data-i18n="brand_tagline">Safer Sowing. Stronger Harvests.</div>
+        </div>
+      </div>
+      <nav class="side-nav" id="d-nav"></nav>
+      <div class="sidebar-foot">
+        <svg class="farmer-illo" viewBox="0 0 120 90" aria-hidden="true">
+          <rect x="0" y="66" width="120" height="24" fill="rgba(74,222,128,.18)"/>
+          <path d="M0 70 Q30 60 60 68 T120 66 V90 H0 Z" fill="rgba(74,222,128,.28)"/>
+          <circle cx="60" cy="34" r="11" fill="#fcd9b6"/>
+          <path d="M48 34 a12 12 0 0 1 24 0 l2 -8 h-28 Z" fill="#b45309"/>
+          <rect x="52" y="44" width="16" height="22" rx="5" fill="#15803d"/>
+          <rect x="47" y="47" width="7" height="16" rx="3" fill="#15803d"/>
+          <rect x="66" y="47" width="7" height="16" rx="3" fill="#15803d"/>
+        </svg>
+        <p class="sidebar-caption" data-i18n="sidebar_caption">Empowering farmers with data</p>
+        <button class="surface-switch" id="to-farmer">📱 <span data-i18n="surface_farmer">Farmer App</span></button>
+      </div>
+    </aside>
+
+    <div class="dash-main">
+      <header class="dash-top">
+        <div class="dash-heading">
+          <h1 data-i18n="nav_dashboard">Dashboard</h1>
+          <p id="d-subtitle" class="dash-sub"></p>
+        </div>
+        <div class="selectors" id="d-selectors"></div>
+      </header>
+      <div id="o-screen-dashboard" class="o-screen active">
+        <section class="kpi-row" id="d-kpis"></section>
+
+      <section class="dash-grid-top">
+        <div class="col-map">
+          <div class="panel map-panel card-3d" style="position:relative;">
+            <div id="d-map" style="position: absolute; inset:0; z-index: 1;"></div>
+            <button id="d-map-reset" class="btn-3d" style="position: absolute; top: 1rem; right: 1rem; z-index: 999; padding: 0.5rem 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">🔄 Reset Map</button>
+            <div class="map-overlay" style="z-index: 10;">
+            <div class="map-head">
+              <div>
+                <div class="panel-title" data-i18n="panel_forecast7">7-Day Rainfall Forecast</div>
+                <div class="panel-sub" id="d-map-sub"></div>
+              </div>
+              <div style="display:flex; gap:0.5rem; align-items:center;">
+                <div class="field-tabs" id="d-field-tabs"></div>
+                <button id="d-map-reset" class="btn-3d" style="padding: 0.35rem 0.7rem; font-size: 0.78rem;">Reset View</button>
+              </div>
+            </div>
+            <div class="map-stage">
+              <div id="d-leaflet"></div>
+              <canvas id="d-heat"></canvas>
+              <div class="map-badge" id="d-map-badge"></div>
+            </div>
+            <div class="map-legend" id="d-legend"></div>
+            <div class="scrubber">
+              <button id="d-play" class="play-btn" aria-label="Play season">▶</button>
+              <input id="d-day" type="range" min="0" max="128" value="20" />
+              <span class="scrub-date" id="d-day-label"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-center">
+          <div class="panel">
+            <div class="panel-title"><span data-i18n="panel_timeline">Monsoon Timeline</span>
+              <span class="panel-sub-inline" data-i18n="panel_timeline_sub">Next 30 days</span></div>
+            <div id="d-timeline" class="timeline-wrap"></div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-title" data-i18n="panel_daily">Daily Rainfall &amp; Probability</div>
+            <div id="d-daily" class="chart-wrap"></div>
+          </div>
+        </div>
+
+        <div class="col-right">
+          <div class="panel" id="d-rec"></div>
+          <div class="panel" id="d-cropwise"></div>
+        </div>
+      </section>
+
+      <section class="dash-grid-bottom">
+        <div class="panel" id="d-soil"></div>
+        <div class="panel" id="d-climate"></div>
+        <div class="panel" id="d-alerts"></div>
+        <div class="panel" id="d-access"></div>
+      </section>
+      </div>
+
+      <!-- Individual module screens with 3D UI -->
+      <div id="o-screen-forecast" class="o-screen" style="display:none">
+        <div class="panel card-3d" style="margin-top: 1rem;">
+          <h2 class="panel-title" style="font-size: 1.4rem;">🌦️ Forecast Dashboard</h2>
+          <p class="crop-sub" style="margin-top: .5rem; font-size: .95rem;">Detailed meteorological charts, ensembles, and high-res models.</p>
+          <div class="kpi-row" style="margin-top: 2rem;">
+            <div class="kpi t-blue"><div class="kpi-title">Precipitation Potential</div><div class="kpi-val">82%</div></div>
+            <div class="kpi t-amber"><div class="kpi-title">Average Temp</div><div class="kpi-val">31°C</div></div>
+            <div class="kpi t-green"><div class="kpi-title">Wind Speed</div><div class="kpi-val">12 km/h</div></div>
+            <div class="kpi t-purple"><div class="kpi-title">Humidity</div><div class="kpi-val">68%</div></div>
+          </div>
+          <div class="dash-grid-top" style="margin-top: 1.5rem;">
+            <div class="panel card-3d" style="height: 300px; display: flex; flex-direction: column;">
+              <h3 style="margin-bottom: 1rem;">15-Day Ensemble</h3>
+              <div style="flex:1; background: linear-gradient(180deg, rgba(96,165,250,0.15) 0%, rgba(15,23,42,0.5) 100%); border-radius: 8px; border: 1px solid var(--line); position: relative; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);">
+                <!-- decorative chart bars -->
+                <div style="position:absolute; bottom:0; left:10%; width: 24px; height: 60%; background: linear-gradient(to top, #3b82f6, #60a5fa); border-radius:4px 4px 0 0;"></div>
+                <div style="position:absolute; bottom:0; left:20%; width: 24px; height: 40%; background: linear-gradient(to top, #3b82f6, #60a5fa); border-radius:4px 4px 0 0;"></div>
+                <div style="position:absolute; bottom:0; left:30%; width: 24px; height: 80%; background: linear-gradient(to top, #3b82f6, #60a5fa); border-radius:4px 4px 0 0;"></div>
+                <div style="position:absolute; bottom:0; left:40%; width: 24px; height: 90%; background: linear-gradient(to top, #3b82f6, #60a5fa); border-radius:4px 4px 0 0;"></div>
+                <div style="position:absolute; bottom:0; left:50%; width: 24px; height: 30%; background: linear-gradient(to top, #3b82f6, #60a5fa); border-radius:4px 4px 0 0;"></div>
+                <div style="position:absolute; bottom:0; left:60%; width: 24px; height: 50%; background: linear-gradient(to top, #3b82f6, #60a5fa); border-radius:4px 4px 0 0;"></div>
+                <div style="position:absolute; bottom:0; left:70%; width: 24px; height: 70%; background: linear-gradient(to top, #3b82f6, #60a5fa); border-radius:4px 4px 0 0;"></div>
+                <div style="position:absolute; bottom:0; left:80%; width: 24px; height: 20%; background: linear-gradient(to top, #3b82f6, #60a5fa); border-radius:4px 4px 0 0;"></div>
+                <div style="position:absolute; bottom:0; left:90%; width: 24px; height: 35%; background: linear-gradient(to top, #3b82f6, #60a5fa); border-radius:4px 4px 0 0;"></div>
+              </div>
+            </div>
+            <div class="panel card-3d" style="height: 300px;">
+              <h3 style="margin-bottom: 1rem;">Radar Overlay</h3>
+              <div style="height: 220px; background: radial-gradient(circle at center, rgba(134,239,172,0.6) 0%, rgba(254,240,138,0.5) 40%, rgba(252,165,165,0.7) 100%), url('data:image/svg+xml;utf8,<svg width=\"20\" height=\"20\" viewBox=\"0 0 20 20\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"2\" cy=\"2\" r=\"1\" fill=\"rgba(0,0,0,0.1)\"/></svg>'); opacity: 0.9; border-radius: 12px; border: 1px solid var(--line); display: grid; place-items:center;">
+                <button class="btn-3d" style="padding: .5rem 1rem;">Play Animation</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="o-screen-events" class="o-screen" style="display:none">
+        <div class="panel card-3d" style="margin-top: 1rem;">
+          <h2 class="panel-title" style="font-size: 1.4rem;">📅 Monsoon Events</h2>
+          <p class="crop-sub" style="margin-top: .5rem; font-size: .95rem;">Historical and projected anomaly events.</p>
+          <div class="dash-grid-top" style="margin-top: 1.5rem;">
+            <div class="panel card-3d" style="height: 400px; overflow-y: auto;">
+              <div class="alert-row" style="padding: 1rem; background: rgba(245,158,11,0.1); border-radius: 8px; margin-bottom: 1rem; display:flex; gap:1rem; align-items:center; box-shadow:0 4px 6px rgba(0,0,0,.2); border:1px solid rgba(245,158,11,0.3);"><span class="alert-ic" style="background:#b45309; color:#fff;">⚠️</span><div class="alert-txt" style="flex:1;"><b>El Niño Warning</b><span class="alert-time">Active since June</span></div><button class="btn-3d" style="padding:.5rem;">View Details</button></div>
+              <div class="alert-row" style="padding: 1rem; background: rgba(239,68,68,0.1); border-radius: 8px; margin-bottom: 1rem; display:flex; gap:1rem; align-items:center; box-shadow:0 4px 6px rgba(0,0,0,.2); border:1px solid rgba(239,68,68,0.3);"><span class="alert-ic" style="background:#b91c1c; color:#fff;">🚨</span><div class="alert-txt" style="flex:1;"><b>Flash Flood - Palghar</b><span class="alert-time">2 Days Ago</span></div><button class="btn-3d" style="padding:.5rem;">Assess Impact</button></div>
+              <div class="alert-row" style="padding: 1rem; background: rgba(56,189,248,0.1); border-radius: 8px; margin-bottom: 1rem; display:flex; gap:1rem; align-items:center; box-shadow:0 4px 6px rgba(0,0,0,.2); border:1px solid rgba(56,189,248,0.3);"><span class="alert-ic" style="background:#0284c7; color:#fff;">🌧️</span><div class="alert-txt" style="flex:1;"><b>Monsoon Onset Delay</b><span class="alert-time">Expected 10-15 Days Late</span></div><button class="btn-3d" style="padding:.5rem;">Read Advisory</button></div>
+            </div>
+            <div class="panel card-3d" style="height: 400px; display:flex; flex-direction:column;">
+              <h3 style="margin-bottom: 1rem;">Historical Anomalies</h3>
+              <div style="flex:1; background: repeating-linear-gradient(45deg, rgba(253,224,71,0.1), rgba(253,224,71,0.1) 10px, rgba(254,240,138,0.05) 10px, rgba(254,240,138,0.05) 20px); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); display: grid; place-items:center; box-shadow:inset 0 4px 12px rgba(0,0,0,.5);">
+                 <span style="background:rgba(255,255,255,0.1); backdrop-filter:blur(8px); padding:.5rem 1rem; border-radius:8px; font-weight:bold; box-shadow:0 4px 12px rgba(0,0,0,.5); color:#fde047; border: 1px solid rgba(253,224,71,0.3);">Drought Index 2023</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="o-screen-crop" class="o-screen" style="display:none">
+        <div class="panel card-3d" style="margin-top: 1rem;">
+          <h2 class="panel-title" style="font-size: 1.4rem;">🌱 Crop Advisory</h2>
+          <p class="crop-sub" style="margin-top: .5rem; font-size: .95rem;">Actionable intelligence for specific crops.</p>
+          <div class="dash-grid-bottom" style="margin-top: 1.5rem;">
+            <div class="panel card-3d" style="text-align: center;"><div style="font-size: 3rem;">🌾</div><h3>Rice</h3><button class="btn-3d" style="padding: .5rem; margin-top: 1rem; width: 100%;">View Details</button></div>
+            <div class="panel card-3d" style="text-align: center;"><div style="font-size: 3rem;">🫘</div><h3>Soybean</h3><button class="btn-3d" style="padding: .5rem; margin-top: 1rem; width: 100%;">View Details</button></div>
+            <div class="panel card-3d" style="text-align: center;"><div style="font-size: 3rem;">🌿</div><h3>Cotton</h3><button class="btn-3d" style="padding: .5rem; margin-top: 1rem; width: 100%;">View Details</button></div>
+            <div class="panel card-3d" style="text-align: center;"><div style="font-size: 3rem;">🌽</div><h3>Maize</h3><button class="btn-3d" style="padding: .5rem; margin-top: 1rem; width: 100%;">View Details</button></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="o-screen-riskmaps" class="o-screen" style="display:none">
+        <div class="panel card-3d" style="margin-top: 1rem;">
+          <h2 class="panel-title" style="font-size: 1.4rem;">🗺️ Risk Maps</h2>
+          <p class="crop-sub" style="margin-top: .5rem; font-size: .95rem;">Interactive multi-layer spatial risk assessment.</p>
+          <div class="panel card-3d" style="height: 500px; position: relative; margin-top: 1.5rem; overflow: hidden; display: flex; padding: 0;">
+            <div style="width: 280px; border-right: 1px solid var(--line); padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; background: rgba(255,255,255,0.02);">
+              <h3 style="margin-bottom: .5rem; font-size:1.1rem; color: #fff;">Map Layers</h3>
+              <label style="display:flex; align-items:center; gap:.75rem; padding:.5rem; background:rgba(255,255,255,0.05); border-radius:8px; border:1px solid var(--line); cursor:pointer; box-shadow:0 2px 4px rgba(0,0,0,.2);"><input type="checkbox" checked style="width:1.2rem; height:1.2rem; accent-color:#4ade80;"> Soil Moisture (SMAP)</label>
+              <label style="display:flex; align-items:center; gap:.75rem; padding:.5rem; background:rgba(255,255,255,0.05); border-radius:8px; border:1px solid var(--line); cursor:pointer; box-shadow:0 2px 4px rgba(0,0,0,.2);"><input type="checkbox" checked style="width:1.2rem; height:1.2rem; accent-color:#4ade80;"> Vegetation Index (NDVI)</label>
+              <label style="display:flex; align-items:center; gap:.75rem; padding:.5rem; background:rgba(255,255,255,0.05); border-radius:8px; border:1px solid var(--line); cursor:pointer; box-shadow:0 2px 4px rgba(0,0,0,.2);"><input type="checkbox" style="width:1.2rem; height:1.2rem; accent-color:#4ade80;"> Rainfall Anomaly</label>
+              <label style="display:flex; align-items:center; gap:.75rem; padding:.5rem; background:rgba(255,255,255,0.05); border-radius:8px; border:1px solid var(--line); cursor:pointer; box-shadow:0 2px 4px rgba(0,0,0,.2);"><input type="checkbox" style="width:1.2rem; height:1.2rem; accent-color:#4ade80;"> Flood Risk Zones</label>
+              <button class="btn-3d" style="margin-top:auto; padding:.75rem; font-weight:600; font-size:1.05rem;">Apply Layers</button>
+            </div>
+            <div style="flex: 1; background: radial-gradient(circle at 30% 30%, rgba(99,102,241,0.15) 0%, rgba(15,23,42,0.8) 100%); display:grid; place-items:center; position:relative;">
+              <div style="position:absolute; inset:0; background:url('data:image/svg+xml;utf8,<svg width=\"40\" height=\"40\" viewBox=\"0 0 40 40\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M0 0h40v40H0z\" fill=\"none\"/><path d=\"M0 39.5h40M39.5 0v40\" stroke=\"rgba(255,255,255,0.05)\" stroke-width=\"1\"/></svg>');"></div>
+              <h1 style="color: #6366f1; opacity: 0.8; z-index:2; text-shadow: 0 2px 10px rgba(0,0,0,0.8);">[ Map Viewer Context ]</h1>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="o-screen-myfarm" class="o-screen" style="display:none">
+        <div class="panel card-3d" style="margin-top: 1rem;">
+          <h2 class="panel-title" style="font-size: 1.4rem;">🚜 My Farm</h2>
+          <p class="crop-sub" style="margin-top: .5rem; font-size: .95rem;">Farm-level hyper-local monitoring and logging.</p>
+          <div class="dash-grid-top" style="margin-top: 1.5rem;">
+            <div class="panel card-3d" style="text-align:center; display:flex; flex-direction:column; justify-content:center;">
+              <div style="font-size: 4rem; margin-bottom: 1rem; filter:drop-shadow(0 4px 8px rgba(0,0,0,0.1));">👨‍🌾</div>
+              <h3 style="font-size: 1.5rem; color:var(--text-main);">Ramesh Patel</h3>
+              <p class="crop-sub" style="font-size: 1.05rem; margin-top:.5rem;">ID: F-88392 | Palghar Block</p>
+              <div style="margin-top: 2rem; display:flex; justify-content:space-around; background:#f8fafc; padding:1rem; border-radius:12px; border:1px solid var(--line);">
+                <div style="display:flex; flex-direction:column; gap:.25rem;"><span style="color:var(--text-muted); font-size:.9rem;">Total Area</span><b style="font-size:1.2rem; color:#15803d;">4.5 Acres</b></div>
+                <div style="width:1px; background:var(--line);"></div>
+                <div style="display:flex; flex-direction:column; gap:.25rem;"><span style="color:var(--text-muted); font-size:.9rem;">Main Crop</span><b style="font-size:1.2rem; color:#b45309;">Rice</b></div>
+              </div>
+            </div>
+            <div class="panel card-3d">
+              <h3 style="margin-bottom: 1.5rem; font-size: 1.2rem;">Recent Activities</h3>
+              <ul style="list-style:none; padding:0; display:flex; flex-direction:column; gap:1.2rem; margin-bottom:1.5rem;">
+                <li style="display:flex; gap:1rem; align-items:center; padding-bottom:1rem; border-bottom:1px solid var(--line);"><div style="background:#e0f2fe; color:#0369a1; padding:.5rem; border-radius:8px; font-weight:bold;">Sep 25</div> <div style="flex:1;"><b>Sowing Completed</b><br><span style="color:var(--text-muted); font-size:.9rem;">Variety IR64</span></div></li>
+                <li style="display:flex; gap:1rem; align-items:center; padding-bottom:1rem; border-bottom:1px solid var(--line);"><div style="background:#fef3c7; color:#b45309; padding:.5rem; border-radius:8px; font-weight:bold;">Oct 02</div> <div style="flex:1;"><b>Basal Fertilizer Applied</b><br><span style="color:var(--text-muted); font-size:.9rem;">Urea + DAP</span></div></li>
+                <li style="display:flex; gap:1rem; align-items:center;"><div style="background:#f1f5f9; color:#475569; padding:.5rem; border-radius:8px; font-weight:bold;">Oct 05</div> <div style="flex:1; color:var(--text-muted);"><b>Upcoming: Weeding</b><br><span style="font-size:.9rem;">Manual</span></div></li>
+              </ul>
+              <button class="btn-3d" style="width:100%; padding:.75rem; font-weight:bold;">+ Log New Activity</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="o-screen-alerts" class="o-screen" style="display:none">
+        <div class="panel card-3d" style="margin-top: 1rem;">
+          <h2 class="panel-title" style="font-size: 1.4rem;">🔔 Alerts & Notifications</h2>
+          <p class="crop-sub" style="margin-top: .5rem; font-size: .95rem;">Configure thresholds and manage alert dispatch channels.</p>
+          <div style="margin-top: 1.5rem;">
+            <div class="alert-row" style="padding: 1rem; background: var(--tint-red); border-radius: 8px; margin-bottom: .5rem;"><span class="alert-ic" style="background:#b91c1c; color:#fff;">⚠️</span><div class="alert-txt"><b>Severe Thunderstorm Warning</b><span class="alert-time">Issued 2 hours ago</span></div></div>
+            <div class="alert-row" style="padding: 1rem; background: var(--tint-amber); border-radius: 8px; margin-bottom: .5rem;"><span class="alert-ic" style="background:#b45309; color:#fff;">☀️</span><div class="alert-txt"><b>Dry Spell Alert for Talasari</b><span class="alert-time">Issued yesterday</span></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="o-screen-reports" class="o-screen" style="display:none">
+        <div class="panel card-3d" style="margin-top: 1rem;">
+          <h2 class="panel-title" style="font-size: 1.4rem;">📄 Reports</h2>
+          <p class="crop-sub" style="margin-top: .5rem; font-size: .95rem;">Export automated PDF reports for policy makers.</p>
+          <div class="dash-grid-top" style="margin-top: 1.5rem;">
+            <div class="panel card-3d">
+              <h3 style="margin-bottom: .5rem;">Monthly Block Summaries</h3>
+              <p class="crop-sub" style="margin-bottom: 1.5rem;">Aggregated advisory performance.</p>
+              <div style="display:flex; flex-direction:column; gap:1rem;">
+                <div style="padding: 1rem; background: #fff; border: 1px solid var(--line); border-radius: 8px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 4px rgba(0,0,0,.02);">
+                  <div style="display:flex; flex-direction:column; gap:.25rem;"><b style="font-size:1.1rem;">September 2026</b><span style="color:var(--text-muted); font-size:.9rem;">4.2 MB · PDF</span></div> 
+                  <button class="btn-3d" style="padding:.5rem 1rem;"><span style="margin-right:.5rem;">⬇️</span> Download</button>
+                </div>
+                <div style="padding: 1rem; background: #fff; border: 1px solid var(--line); border-radius: 8px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 4px rgba(0,0,0,.02);">
+                  <div style="display:flex; flex-direction:column; gap:.25rem;"><b style="font-size:1.1rem;">August 2026</b><span style="color:var(--text-muted); font-size:.9rem;">3.8 MB · PDF</span></div> 
+                  <button class="btn-3d" style="padding:.5rem 1rem;"><span style="margin-right:.5rem;">⬇️</span> Download</button>
+                </div>
+              </div>
+            </div>
+            <div class="panel card-3d" style="display:flex; flex-direction:column;">
+              <h3 style="margin-bottom: .5rem;">Custom Report Generator</h3>
+              <p class="crop-sub" style="margin-bottom: 1.5rem;">Build a report with specific indicators.</p>
+              <div style="display:flex; flex-direction:column; gap:1rem; flex:1;">
+                <label style="display:flex; flex-direction:column; gap:.5rem; font-weight:600; color:var(--text-main);">Select Block
+                  <select style="padding:.75rem; border-radius:8px; border:1px solid var(--line); background:#f8fafc; font-size:1rem; cursor:pointer;"><option>Talasari Block</option><option>Dahanu Block</option></select>
+                </label>
+                <label style="display:flex; flex-direction:column; gap:.5rem; font-weight:600; color:var(--text-main);">Time Period
+                  <select style="padding:.75rem; border-radius:8px; border:1px solid var(--line); background:#f8fafc; font-size:1rem; cursor:pointer;"><option>Last 30 Days</option><option>Last 90 Days</option><option>Kharif Season 2026</option></select>
+                </label>
+              </div>
+              <button class="btn-3d" style="margin-top: 1.5rem; width:100%; padding:1rem; font-size:1.1rem; font-weight:bold; background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); color:#fff; border:none; box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);">Generate Report</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="o-screen-settings" class="o-screen" style="display:none">
+        <div class="panel card-3d" style="margin-top: 1rem;">
+          <h2 class="panel-title" style="font-size: 1.4rem;">⚙️ Settings</h2>
+          <p class="crop-sub" style="margin-top: .5rem; font-size: .95rem;">System configuration and profile preferences.</p>
+          <div style="margin-top: 2rem; max-width: 400px; display: flex; flex-direction: column; gap: 1rem;">
+            <label style="display: flex; flex-direction: column; gap: .4rem; font-weight: 700; font-size: .9rem;">User Name <input id="settings-username" type="text" value="Agriculture Officer" style="padding: .6rem; border: 1px solid var(--line); border-radius: 8px;" /></label>
+            <label style="display: flex; flex-direction: column; gap: .4rem; font-weight: 700; font-size: .9rem;">Default Language 
+              <select id="settings-lang" style="padding: .6rem; border: 1px solid var(--line); border-radius: 8px;">
+                <option value="en">English</option><option value="hi">Hindi</option><option value="mr">Marathi</option>
+              </select>
+            </label>
+            <button id="settings-save" class="btn-3d" style="padding: .75rem; margin-top: .5rem;">Save Changes</button>
+          </div>
+        </div>
+      </div>
+
+      <footer class="foot"><span data-i18n="disclaimer">Prototype</span></footer>
+    </div>
+  </div>
+  <!-- ===================== FARMER MOBILE APP ===================== -->
+  <div class="surface surface-farmer">
+    <div class="phone">
+      <header class="app-head">
+        <div class="app-brand">
+          <svg class="logo-mark sm" viewBox="0 0 44 44" aria-hidden="true">
+            <path d="M22 32 C22 24 16 18 11 17 C11 25 16 31 22 32 Z" fill="#15803d"/>
+            <path d="M22 32 C22 22 28 15 34 14 C34 24 28 31 22 32 Z" fill="#22c55e"/>
+            <path d="M22 33 L22 23" stroke="#166534" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <div class="wm-row sm"><span class="wm-sow">SOW</span><span class="wm-safe">SAFE</span></div>
+        </div>
+        <div class="app-head-right">
+          <div class="lang mini" id="m-lang"></div>
+          <button class="bell" id="m-bell" aria-label="Alerts">🔔<span class="bell-dot"></span></button>
+        </div>
+      </header>
+
+      <main class="app-body" id="m-body">
+        <section class="screen active" id="screen-home"></section>
+        <section class="screen" id="screen-forecast"></section>
+        <section class="screen" id="screen-advisory"></section>
+        <section class="screen" id="screen-map"></section>
+        <section class="screen" id="screen-alerts"></section>
+        <section class="screen" id="screen-more"></section>
+      </main>
+
+      <nav class="bottom-nav" id="m-nav"></nav>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="i18n.js?v=7"></script>
+  <script src="app.js?v=7"></script>
+  <script src="charts.js?v=8"></script>
+  <script src="heatmap.js?v=8"></script>
+  <script src="dashboard.js?v=8"></script>
+  <script src="farmer.js?v=8"></script>
+</body>
+</html>

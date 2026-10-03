@@ -1,7 +1,0 @@
-{
-  "model_type": "base_vlm_projection",
-  "feature_dim": 128,
-  "hidden_dim": 128,
-  "num_classes": 8,
-  "status": "frozen_base"
-}

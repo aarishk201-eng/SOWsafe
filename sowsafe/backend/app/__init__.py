@@ -1,0 +1,1 @@
+"""SowSafe backend application package."""

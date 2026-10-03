@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <rect width="128" height="128" rx="28" fill="#0f766e"/>
+  <!-- raindrop -->
+  <path d="M64 24 C64 24 44 52 44 70 a20 20 0 0 0 40 0 C84 52 64 24 64 24 Z" fill="#bae6fd" opacity="0.95"/>
+  <!-- sprout -->
+  <path d="M64 104 C64 90 64 80 64 72" stroke="#15803d" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <path d="M64 84 C56 84 48 78 46 68 C58 68 64 76 64 84 Z" fill="#22c55e"/>
+  <path d="M64 92 C72 92 80 86 82 76 C70 76 64 84 64 92 Z" fill="#16a34a"/>
+</svg>
