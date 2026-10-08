@@ -159,7 +159,7 @@ function renderNavs() {
         b.classList.add("active");
         $$(".o-screen").forEach((scr) => (scr.style.display = "none"));
         const tgt = $("#o-screen-" + id);
-        if (tgt) tgt.style.display = "block";
+        if (tgt) tgt.style.display = id === "dashboard" ? "grid" : "block";
         if (id === "dashboard" && state._leaflet) {
           setTimeout(() => state._leaflet.invalidateSize(), 10);
         }

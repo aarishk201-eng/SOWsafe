@@ -66,7 +66,13 @@ function peakText(arr, from, thr, prefixKey) {
   const i = firstIdxFrom(arr, Math.max(0, from), (v) => v >= thr);
   if (i < 0) return "";
   const j = Math.min(i + 3, state.meta.n_days - 1);
-  return `${t(prefixKey)}: ${fmtDay(_dates()[i])}–${fmtDay(_dates()[j]).replace(/^\d+\s/, "")}`;
+  const startStr = fmtDay(_dates()[i]);
+  const endStr = fmtDay(_dates()[j]);
+  // If same month, show "14–17 Jun"; otherwise show "28 Jun–2 Jul"
+  const startMonth = new Date(_dates()[i]).getMonth();
+  const endMonth = new Date(_dates()[j]).getMonth();
+  const endDisplay = startMonth === endMonth ? new Date(_dates()[j]).getDate() + " " + endStr.replace(/^\d+\s*/, "") : endStr;
+  return `${t(prefixKey)}: ${startStr}–${endDisplay}`;
 }
 function renderKPIs(det) {
   const host = $("#d-kpis"); if (!host) return;
@@ -151,7 +157,7 @@ function renderTimeline(det) {
   // Stagger markers to avoid text overlap
   ms.sort((a, b) => a.f - b.f);
   for (let i = 1; i < ms.length; i++) {
-    if (ms[i].f - ms[i-1].f < 0.08) ms[i].f = Math.min(1, ms[i-1].f + 0.08);
+    if (ms[i].f - ms[i-1].f < 0.15) ms[i].f = Math.min(1, ms[i-1].f + 0.15);
   }
   ms.forEach((m, i) => m.below = (i % 2 !== 0));
   const nowF = (frac(day) * 100).toFixed(1);
